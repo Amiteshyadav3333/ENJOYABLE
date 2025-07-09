@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LiveCast</title>
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- External Libraries -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"></script>
+
+  <!-- Main App Script -->
+  <script src="{{ url_for('static', filename='main.js') }}" defer></script>
+</head>
+<body>
+
+  <!-- ===== Title Header ===== -->
+  <header>
+    <h2>🔴 LiveCast – Real-time Broadcast App</h2>
+  </header>
+
+  <!-- ===== AUTH SECTION ===== -->
+  <section id="auth">
+    <h3>Login / Signup</h3>
+    <input type="text" id="authUsername" placeholder="Username" />
+    <input type="password" id="authPassword" placeholder="Password" />
+    <button onclick="signup()">Signup</button>
+    <button onclick="login()">Login</button>
+  </section>
+
+  <!-- ===== JOIN SECTION ===== -->
+  <section id="joinSection">
+    <h3>Join as Participant</h3>
+    <input type="text" id="name" placeholder="Name" />
+    <input type="text" id="mobile" placeholder="Mobile Number" />
+    <label><input type="checkbox" id="isAdmin" /> Join as Admin</label>
+    <button id="joinBtn">Join</button>
+  </section>
+
+  <!-- ===== LOBBY ===== -->
+  <section id="lobby">
+    <h3>🚀 LiveCast Lobby</h3>
+    <input id="lobbyUsername" placeholder="Your Name" />
+    <input id="roomName" placeholder="Room Name (optional)" />
+    <button id="createBtn">Create Room</button>
+    <input id="joinRoomId" placeholder="Room ID to Join" />
+    <button id="joinBtn">Join Room</button>
+  </section>
+
+  <!-- ===== ROOM VIEW ===== -->
+  <section id="room" hidden>
+    <header>
+      <h2 id="roomHeader"></h2>
+      <span id="adminBadge" hidden>👑 Admin</span>
+      <button id="leaveBtn">Leave</button>
+    </header>
+
+    <div style="display: flex; flex: 1;">
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <h3>Participants</h3>
+        <ul id="userList"></ul>
+
+        <h3>Chat</h3>
+        <div id="chatWindow"></div>
+        <input id="chatInput" placeholder="Message" />
+        <button id="sendChat">Send</button>
+
+        <div id="reactionBar">
+          <button class="reaction">👍</button>
+          <button class="reaction">😂</button>
+          <button class="reaction">👏</button>
+          <button class="reaction">❤️</button>
+        </div>
+
+        <div id="adminControls" hidden>
+          <h4>Admin Controls</h4>
+          <select id="targetSelect"></select>
+          <button data-action="mute_audio">Mute Audio</button>
+          <button data-action="mute_video">Mute Video</button>
+          <button data-action="kick">Kick</button>
+        </div>
+      </aside>
+
+      <!-- Video Area -->
+      <main id="videoArea">
+        <video id="localVideo" autoplay playsinline muted></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+        <!-- Additional remote videos will be appended dynamically -->
+      </main>
+    </div>
+
+    <!-- Room Controls Footer -->
+    <footer id="roomControls">
+      <button id="toggleMic">🎙️ / 🔇</button>
+      <button id="toggleCam">📷 / 🚫</button>
+      <button id="shareScreen">🖥️ Share Screen</button>
+      <button id="recordBtn">🔴 Record</button>
+    </footer>
+  </section>
+
+</body>
+</html>ß
