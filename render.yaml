@@ -11,3 +11,4 @@ services:
     runtime: python
     plan: free
     region: oregon
+    startCommand: gunicorn app:app --chdir backend --worker-class eventlet -w 1
