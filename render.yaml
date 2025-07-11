@@ -1,9 +1,10 @@
+
 services:
   - type: web
     name: livecast-backend
     env: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn app:app --chdir backend --worker-class eventlet -w 1
+    startCommand: gunicorn backend.app:app --worker-class eventlet -w 1
     envVars:
       - key: PYTHONPATH
         value: backend
