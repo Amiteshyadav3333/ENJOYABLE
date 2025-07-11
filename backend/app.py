@@ -11,7 +11,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 # -------------------------
 # Configuration
@@ -21,24 +21,12 @@ DB_PATH = os.path.join(BASE_DIR, 'database', 'users.db')
 
 app.secret_key = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/users.db'
 
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 db = SQLAlchemy(app)
 
 # -------------------------
-# SQLite Fallback
-# -------------------------
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-# -------------------------
-# SQLAlchemy Models
+# SQLAlchemy Model
 # -------------------------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,51 +38,21 @@ class User(db.Model):
     room = db.Column(db.String(50))
 
 # -------------------------
-# Flask Routes
+# Routes for frontend templates
 # -------------------------
 @app.route('/')
 def home():
     if 'username' in session:
         return render_template('index.html', username=session['username'])
-    return redirect(url_for('login'))
+    return redirect('/login')
 
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     try:
-#         if request.method == 'POST':
-#             username = request.form['username']
-#             password = request.form['password']
-#             conn = get_db()
-#             c = conn.cursor()
-#             c.execute("SELECT * FROM users WHERE username = ?", (username,))
-#             user = c.fetchone()
-#             conn.close()
-#             if user and check_password_hash(user['password_hash'], password):
-#                 session['user_id'] = user['id']
-#                 session['username'] = user['username']
-#                 return redirect(url_for('home'))
-#             else:
-#                 return "Invalid credentials", 401
-#     except Exception as e:
-#         print("Login error:", str(e))
-#         traceback.print_exc()
-#         return "500 Internal Server Error", 500
-#     return render_template('login.html')
+@app.route('/login')
+def login_page():
+    return render_template('login.html')
 
-# @app.route('/signup', methods=['POST'])
-# def signup():
-#     data = request.get_json()
-#     username = data.get('username')
-#     password = data.get('password')
-#     mobile = data.get('mobile')
-#     is_admin = data.get('is_admin', False)
-#     if User.query.filter_by(username=username).first():
-#         return jsonify({"message": "Username already exists"}), 409
-#     password_hash = generate_password_hash(password)
-#     user = User(username=username, mobile=mobile, password_hash=password_hash, is_admin=is_admin)
-#     db.session.add(user)
-#     db.session.commit()
-#     return jsonify({"message": "Signup successful"}), 201
+@app.route('/signup')
+def signup_page():
+    return render_template('signup.html')
 
 @app.route('/logout')
 def logout():
@@ -102,7 +60,49 @@ def logout():
     return redirect('/login')
 
 # -------------------------
-# Socket.IO Events
+# API Routes for JS fetch
+# -------------------------
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            return jsonify({"message": "Login successful"}), 200
+        return jsonify({"message": "Invalid credentials"}), 401
+    except Exception as e:
+        print("Login error:", str(e))
+        traceback.print_exc()
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route('/signup', methods=['POST'])
+def api_signup():
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        mobile = data.get('mobile')
+        is_admin = data.get('is_admin', False)
+
+        if User.query.filter_by(username=username).first():
+            return jsonify({"message": "Username already exists"}), 409
+
+        password_hash = generate_password_hash(password)
+        user = User(username=username, mobile=mobile, password_hash=password_hash, is_admin=is_admin)
+        db.session.add(user)
+        db.session.commit()
+        return jsonify({"message": "Signup successful"}), 201
+    except Exception as e:
+        print("Signup error:", str(e))
+        traceback.print_exc()
+        return jsonify({"message": "Internal Server Error"}), 500
+
+# -------------------------
+# Socket.IO Logic
 # -------------------------
 rooms = {}
 
@@ -158,24 +158,15 @@ def join_room_evt(data):
 
 @socketio.on('chat_message')
 def chat_message(data):
-    emit('chat_message', {
-        'sid': request.sid,
-        'text': data['text']
-    }, room=data['room_id'])
+    emit('chat_message', {'sid': request.sid, 'text': data['text']}, room=data['room_id'])
 
 @socketio.on('reaction')
 def reaction(data):
-    emit('reaction', {
-        'sid': request.sid,
-        'emoji': data['emoji']
-    }, room=data['room_id'])
+    emit('reaction', {'sid': request.sid, 'emoji': data['emoji']}, room=data['room_id'])
 
 @socketio.on('signal')
 def signal(data):
-    emit('signal', {
-        'sid': request.sid,
-        'signal': data['signal']
-    }, room=data['target'])
+    emit('signal', {'sid': request.sid, 'signal': data['signal']}, room=data['target'])
 
 @socketio.on('admin_action')
 def admin_action(data):
@@ -194,9 +185,6 @@ def admin_action(data):
     else:
         emit('admin_action', {'action': action}, room=target)
 
-# -------------------------
-# Helper
-# -------------------------
 def _update_user_list(room_id):
     room = rooms.get(room_id)
     if not room:
@@ -205,27 +193,9 @@ def _update_user_list(room_id):
     emit('user_list', users, room=room_id)
 
 # -------------------------
-# Start the Server
+# Server Start
 # -------------------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     socketio.run(app, host='0.0.0.0', port=5001, debug=True)
-
-from werkzeug.security import generate_password_hash
-import sqlite3
-
-db_path = "../database/users.db"
-username = "admin"
-password = "admin123"
-password_hash = generate_password_hash(password)
-
-conn = sqlite3.connect(db_path)
-cur = conn.cursor()
-cur.execute("INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)",
-          (username, password_hash, 1))
-conn.commit()
-conn.close()
-
-print("✅ User created: admin / admin123")
-
