@@ -9,6 +9,50 @@ from flask import Flask, render_template, request, redirect, session, url_for
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
+from flask import Flask, request, jsonify, session
+from flask_cors import CORS
+from twilio.rest import Client
+import random
+
+app = Flask(__name__)
+app.secret_key = 'your-secret-key'
+CORS(app)
+
+# Twilio credentials
+TWILIO_ACCOUNT_SID = 'your_account_sid'
+TWILIO_AUTH_TOKEN = 'your_auth_token'
+TWILIO_PHONE_NUMBER = '+1XXXXXXXXXX'
+
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+@app.route('/send_otp', methods=['POST'])
+def send_otp():
+    data = request.get_json()
+    mobile = data.get('mobile')
+    if not mobile:
+        return jsonify({'success': False, 'message': 'Mobile number is required'}), 400
+
+    otp = str(random.randint(1000, 9999))
+    session['otp'] = otp
+
+    try:
+        message = client.messages.create(
+            body=f"Your OTP for LiveCast Signup is: {otp}",
+            from_=TWILIO_PHONE_NUMBER,
+            to=mobile  # Should include +91 for India
+        )
+        return jsonify({'success': True, 'message': 'OTP sent successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/verify_otp', methods=['POST'])
+def verify_otp():
+    data = request.get_json()
+    entered_otp = data.get('otp')
+    if entered_otp == session.get('otp'):
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': 'Incorrect OTP'})
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
