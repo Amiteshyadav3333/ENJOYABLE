@@ -46,13 +46,44 @@ def home():
         return render_template('index.html', username=session['username'])
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET'])
+
+from flask import Flask, render_template, request, redirect, url_for
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'POST':
+        # Get form data
+        username = request.form.get('username')
+        password = request.form.get('password')
+        # Validate login
+        return redirect(url_for('index'))
     return render_template('login.html')
 
-@app.route('/signup', methods=['GET'])
+@app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        # Save user to DB
+        return redirect(url_for('login'))
     return render_template('signup.html')
+
+# @app.route('/login', methods=['GET'])
+# def login():
+#     return render_template('login.html')
+
+
+ 
+
+# @app.route('/signup', methods=['GET'])
+# def signup():
+#     return render_template('signup.html')
 
 @app.route('/logout')
 def logout():
