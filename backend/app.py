@@ -58,43 +58,43 @@ def home():
         return render_template('index.html', username=session['username'])
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    try:
-        if request.method == 'POST':
-            username = request.form['username']
-            password = request.form['password']
-            conn = get_db()
-            c = conn.cursor()
-            c.execute("SELECT * FROM users WHERE username = ?", (username,))
-            user = c.fetchone()
-            conn.close()
-            if user and check_password_hash(user['password_hash'], password):
-                session['user_id'] = user['id']
-                session['username'] = user['username']
-                return redirect(url_for('home'))
-            else:
-                return "Invalid credentials", 401
-    except Exception as e:
-        print("Login error:", str(e))
-        traceback.print_exc()
-        return "500 Internal Server Error", 500
-    return render_template('login.html')
+# @app.route('/login', methods=['GET', 'POST'])
+# def login():
+#     try:
+#         if request.method == 'POST':
+#             username = request.form['username']
+#             password = request.form['password']
+#             conn = get_db()
+#             c = conn.cursor()
+#             c.execute("SELECT * FROM users WHERE username = ?", (username,))
+#             user = c.fetchone()
+#             conn.close()
+#             if user and check_password_hash(user['password_hash'], password):
+#                 session['user_id'] = user['id']
+#                 session['username'] = user['username']
+#                 return redirect(url_for('home'))
+#             else:
+#                 return "Invalid credentials", 401
+#     except Exception as e:
+#         print("Login error:", str(e))
+#         traceback.print_exc()
+#         return "500 Internal Server Error", 500
+#     return render_template('login.html')
 
-@app.route('/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    mobile = data.get('mobile')
-    is_admin = data.get('is_admin', False)
-    if User.query.filter_by(username=username).first():
-        return jsonify({"message": "Username already exists"}), 409
-    password_hash = generate_password_hash(password)
-    user = User(username=username, mobile=mobile, password_hash=password_hash, is_admin=is_admin)
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({"message": "Signup successful"}), 201
+# @app.route('/signup', methods=['POST'])
+# def signup():
+#     data = request.get_json()
+#     username = data.get('username')
+#     password = data.get('password')
+#     mobile = data.get('mobile')
+#     is_admin = data.get('is_admin', False)
+#     if User.query.filter_by(username=username).first():
+#         return jsonify({"message": "Username already exists"}), 409
+#     password_hash = generate_password_hash(password)
+#     user = User(username=username, mobile=mobile, password_hash=password_hash, is_admin=is_admin)
+#     db.session.add(user)
+#     db.session.commit()
+#     return jsonify({"message": "Signup successful"}), 201
 
 @app.route('/logout')
 def logout():
