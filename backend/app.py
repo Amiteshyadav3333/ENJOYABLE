@@ -74,16 +74,6 @@ def signup():
         return redirect(url_for('login'))
     return render_template('signup.html')
 
-# @app.route('/login', methods=['GET'])
-# def login():
-#     return render_template('login.html')
-
-
- 
-
-# @app.route('/signup', methods=['GET'])
-# def signup():
-#     return render_template('signup.html')
 
 @app.route('/logout')
 def logout():
