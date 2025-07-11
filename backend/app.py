@@ -5,10 +5,10 @@ import os
 import sqlite3
 import uuid
 import traceback
-from flask import Flask, render_template, request, redirect, session, url_for, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
@@ -20,8 +20,8 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DB_PATH = os.path.join(BASE_DIR, 'database', 'users.db')
 
 app.secret_key = 'your_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
 
 db = SQLAlchemy(app)
 
@@ -38,20 +38,20 @@ class User(db.Model):
     room = db.Column(db.String(50))
 
 # -------------------------
-# Routes for frontend templates
+# Routes
 # -------------------------
 @app.route('/')
 def home():
     if 'username' in session:
         return render_template('index.html', username=session['username'])
-    return redirect('/login')
+    return redirect(url_for('login'))
 
-@app.route('/login')
-def login_page():
+@app.route('/login', methods=['GET'])
+def login():
     return render_template('login.html')
 
-@app.route('/signup')
-def signup_page():
+@app.route('/signup', methods=['GET'])
+def signup():
     return render_template('signup.html')
 
 @app.route('/logout')
@@ -60,49 +60,7 @@ def logout():
     return redirect('/login')
 
 # -------------------------
-# API Routes for JS fetch
-# -------------------------
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    try:
-        data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password_hash, password):
-            session['user_id'] = user.id
-            session['username'] = user.username
-            return jsonify({"message": "Login successful"}), 200
-        return jsonify({"message": "Invalid credentials"}), 401
-    except Exception as e:
-        print("Login error:", str(e))
-        traceback.print_exc()
-        return jsonify({"message": "Internal Server Error"}), 500
-
-@app.route('/signup', methods=['POST'])
-def api_signup():
-    try:
-        data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        mobile = data.get('mobile')
-        is_admin = data.get('is_admin', False)
-
-        if User.query.filter_by(username=username).first():
-            return jsonify({"message": "Username already exists"}), 409
-
-        password_hash = generate_password_hash(password)
-        user = User(username=username, mobile=mobile, password_hash=password_hash, is_admin=is_admin)
-        db.session.add(user)
-        db.session.commit()
-        return jsonify({"message": "Signup successful"}), 201
-    except Exception as e:
-        print("Signup error:", str(e))
-        traceback.print_exc()
-        return jsonify({"message": "Internal Server Error"}), 500
-
-# -------------------------
-# Socket.IO Logic
+# Socket.IO Events
 # -------------------------
 rooms = {}
 
@@ -158,15 +116,24 @@ def join_room_evt(data):
 
 @socketio.on('chat_message')
 def chat_message(data):
-    emit('chat_message', {'sid': request.sid, 'text': data['text']}, room=data['room_id'])
+    emit('chat_message', {
+        'sid': request.sid,
+        'text': data['text']
+    }, room=data['room_id'])
 
 @socketio.on('reaction')
 def reaction(data):
-    emit('reaction', {'sid': request.sid, 'emoji': data['emoji']}, room=data['room_id'])
+    emit('reaction', {
+        'sid': request.sid,
+        'emoji': data['emoji']
+    }, room=data['room_id'])
 
 @socketio.on('signal')
 def signal(data):
-    emit('signal', {'sid': request.sid, 'signal': data['signal']}, room=data['target'])
+    emit('signal', {
+        'sid': request.sid,
+        'signal': data['signal']
+    }, room=data['target'])
 
 @socketio.on('admin_action')
 def admin_action(data):
@@ -185,6 +152,9 @@ def admin_action(data):
     else:
         emit('admin_action', {'action': action}, room=target)
 
+# -------------------------
+# Helper
+# -------------------------
 def _update_user_list(room_id):
     room = rooms.get(room_id)
     if not room:
@@ -193,9 +163,20 @@ def _update_user_list(room_id):
     emit('user_list', users, room=room_id)
 
 # -------------------------
-# Server Start
+# Run Server
 # -------------------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
+        # Create default admin
+        username = "admin"
+        password = "admin123"
+        password_hash = generate_password_hash(password)
+        if not User.query.filter_by(username=username).first():
+            new_admin = User(username=username, password_hash=password_hash, is_admin=True)
+            db.session.add(new_admin)
+            db.session.commit()
+            print("✅ User created: admin / admin123")
+
     socketio.run(app, host='0.0.0.0', port=5001, debug=True)
