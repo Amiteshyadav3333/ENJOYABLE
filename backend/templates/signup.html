@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
+  
     body {
       margin: 0;
       padding: 0;
@@ -140,3 +141,28 @@
   </script>
 </body>
 </html>
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(signupForm);
+  signupData = Object.fromEntries(formData.entries());
+  signupData.is_admin = formData.get("is_admin") === "on";
+
+  // 🟠 Twilio: Mobile must start with +91 (India)
+  if (!signupData.mobile.startsWith('+91')) {
+    signupData.mobile = '+91' + signupData.mobile;
+  }
+
+  const otpRes = await fetch('/send_otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mobile: signupData.mobile })
+  });
+
+  const otpResult = await otpRes.json();
+  if (otpResult.success) {
+    otpSection.style.display = "block";
+    alert("OTP sent to your mobile number.");
+  } else {
+    alert(otpResult.message || "OTP failed.");
+  }
+});
