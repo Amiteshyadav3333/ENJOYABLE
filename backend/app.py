@@ -226,9 +226,3 @@ conn.close()
 
 print("✅ User created: admin / admin123")
 
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        # process signup form
-        ...
-    return render_template('signup.html')
