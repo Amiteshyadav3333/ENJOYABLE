@@ -7,6 +7,16 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from flask import Flask
+app = Flask(__name__)
+
+# backend/app.py
+from flask import Flask
+from flask_socketio import SocketIO
+
+app = Flask(__name__)
+socketio = SocketIO(app)
+
 # -------------------------
 # Configuration
 # -------------------------
@@ -52,6 +62,10 @@ def home():
     if 'username' in session:
         return render_template('index.html', username=session['username'])
     return redirect(url_for('login'))
+
+@app.route('/')
+def home():
+    return "Hello from LiveCast!"
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -218,8 +232,9 @@ password_hash = generate_password_hash(password)
 
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
-cur.execute("INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)",
-            (username, password_hash, 1))
+cur.execute("INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)",
+          (username, password_hash, 1))
+
 conn.commit()
 conn.close()
 
@@ -233,4 +248,4 @@ def signup():
     if request.method == 'POST':
         # process signup form
         ...
-    return render_template('signup.html')  # <-- allow GET so form loads
+    return render_template('signup.html')  
