@@ -1,9 +1,19 @@
+# services:
+#   - type: web
+#     name: emjoyable-app
+#     env: python
+#     buildCommand: pip install -r backend/requirements.txt
+#     startCommand: gunicorn backend.app:app --worker-class eventlet -w 1
+#     envVars:
+#       - key: PYTHONPATH
+#         value: backend
 services:
   - type: web
-    name: livecast-backend
+    name: enjoyable-app
     env: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn backend.app:app --worker-class eventlet -w 1
+    startCommand: gunicorn app:app --worker-class eventlet -w 1
     envVars:
-      - key: PYTHONPATH
-        value: backend
+      - key: FLASK_ENV
+        value: production
+    rootDir: backend
