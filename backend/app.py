@@ -7,13 +7,6 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from flask import Flask
-app = Flask(__name__)
-
-# backend/app.py
-from flask import Flask
-from flask_socketio import SocketIO
-
 app = Flask(__name__)
 socketio = SocketIO(app)
 
@@ -23,7 +16,6 @@ socketio = SocketIO(app)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DB_PATH = os.path.join(BASE_DIR, 'database', 'users.db')
 
-app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
@@ -62,10 +54,6 @@ def home():
     if 'username' in session:
         return render_template('index.html', username=session['username'])
     return redirect(url_for('login'))
-
-@app.route('/')
-def home():
-    return "Hello from LiveCast!"
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -113,7 +101,7 @@ def logout():
 # -------------------------
 # Socket.IO Events
 # -------------------------
-rooms = {}  # room_id -> {admin, participants: {sid: {username}}}
+rooms = {}
 
 @socketio.on('connect')
 def on_connect():
@@ -221,7 +209,6 @@ if __name__ == '__main__':
         db.create_all()
     socketio.run(app, host='0.0.0.0', port=5001, debug=True)
 
-
 from werkzeug.security import generate_password_hash
 import sqlite3
 
@@ -234,18 +221,14 @@ conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 cur.execute("INSERT OR IGNORE INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)",
           (username, password_hash, 1))
-
 conn.commit()
 conn.close()
 
 print("✅ User created: admin / admin123")
-
-
-
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         # process signup form
         ...
-    return render_template('signup.html')  
+    return render_template('signup.html')
