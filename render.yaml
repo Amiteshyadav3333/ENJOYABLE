@@ -5,6 +5,3 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --worker-class eventlet -w 1
-    envVars:
-      - key: PYTHONPATH
-        value: .
