@@ -1,9 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LiveCast</title>
+
+  <!-- Favicon fix -->
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
+
+  <!-- Socket.IO -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+  <!-- SimplePeer -->
+  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+
+  <!-- Your main.js -->
   <script src="/static/main.js" defer></script>
+
+  <!-- Inline Style (optional, better use style.css file) -->
   <style>
     video { width: 300px; border: 2px solid black; margin: 10px; }
     #videoArea { display: flex; flex-wrap: wrap; }
@@ -11,6 +25,7 @@
     .reaction { font-size: 24px; cursor: pointer; margin: 5px; }
   </style>
 </head>
+
 <body>
   <div id="lobby">
     <h2>Welcome to LiveCast!</h2>
