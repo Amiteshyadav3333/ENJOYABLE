@@ -2,11 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LiveCast</title>
-
-  <!-- Favicon fix -->
-  <link rel="icon" href="/static/favicon.ico" type="image/x-icon" />
 
   <!-- Socket.IO -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -14,33 +10,65 @@
   <!-- SimplePeer -->
   <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
 
-  <!-- Your main.js -->
+  <!-- Your main logic -->
   <script src="/static/main.js" defer></script>
 
-  <!-- Inline Style (optional, better use style.css file) -->
   <style>
-    video { width: 300px; border: 2px solid black; margin: 10px; }
-    #videoArea { display: flex; flex-wrap: wrap; }
-    #chatWindow { height: 100px; overflow-y: scroll; border: 1px solid #ccc; margin-top: 10px; padding: 5px; }
-    .reaction { font-size: 24px; cursor: pointer; margin: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    video {
+      width: 300px;
+      border: 2px solid black;
+      margin: 10px;
+    }
+
+    #videoArea {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    #chatWindow {
+      height: 100px;
+      overflow-y: scroll;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+      padding: 5px;
+    }
+
+    .reaction {
+      font-size: 24px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    #adminControls {
+      margin-top: 10px;
+    }
   </style>
 </head>
-
 <body>
+  <!-- Lobby UI -->
   <div id="lobby">
     <h2>Welcome to LiveCast!</h2>
     <input id="lobbyUsername" placeholder="Your name" />
+    <br /><br />
     <input id="roomName" placeholder="Create room name" />
     <button id="createBtn">Create Room</button>
+    <br /><br />
     <input id="joinRoomId" placeholder="Join room ID" />
     <button id="joinBtn">Join Room</button>
   </div>
 
+  <!-- Room UI -->
   <div id="room" hidden>
     <h2 id="roomHeader"></h2>
     <span id="adminBadge" hidden>⭐ Admin</span>
     <button id="leaveBtn">Leave</button>
 
+    <!-- Admin Controls -->
     <div id="adminControls" hidden>
       <h4>Admin Controls:</h4>
       <select id="targetSelect"></select>
@@ -49,10 +77,12 @@
       <button data-action="kick">Kick User</button>
     </div>
 
+    <!-- Videos -->
     <div id="videoArea">
       <video id="localVideo" autoplay muted playsinline></video>
     </div>
 
+    <!-- Controls -->
     <div>
       <button id="toggleMic">🎙️ Toggle Mic</button>
       <button id="toggleCam">🎥 Toggle Cam</button>
@@ -61,6 +91,7 @@
       <button id="recordBtn">⏺️ Start/Stop Recording</button>
     </div>
 
+    <!-- Chat -->
     <div id="chat">
       <h4>Chat</h4>
       <div id="chatWindow"></div>
@@ -74,6 +105,7 @@
       </div>
     </div>
 
+    <!-- Participants -->
     <h4>Participants:</h4>
     <ul id="userList"></ul>
   </div>
