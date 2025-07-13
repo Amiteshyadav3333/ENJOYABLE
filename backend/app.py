@@ -51,6 +51,8 @@ def send_otp():
         return jsonify({'success': False, 'message': 'Invalid mobile number'}), 400
 
     otp = str(random.randint(1000, 9999))
+    otp = str(random.randint(1000, 9999))
+    print("OTP is:", otp)
     session['otp'] = otp
     session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
 

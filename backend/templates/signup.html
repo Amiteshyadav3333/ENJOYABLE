@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
+    /* same styling as you gave */
     body {
       margin: 0;
       padding: 0;
@@ -140,14 +141,14 @@
       signupData = Object.fromEntries(formData.entries());
       signupData.is_admin = form.is_admin.checked;
 
+      // 📲 Validate mobile number
       if (!/^\d{10}$/.test(signupData.mobile)) {
         return alert('❗ Enter a valid 10-digit mobile number');
       }
 
-      if (!signupData.mobile.startsWith('+91')) {
-        signupData.mobile = '+91' + signupData.mobile;
-      }
+      signupData.mobile = signupData.mobile.replace(/^(\+91)?/, '+91');
 
+      // 🔐 Password strength validation
       const password = signupData.password;
       if (password.length < 6 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
         return alert('🔐 Password must be at least 6 characters long, contain a number and an uppercase letter.');
@@ -202,7 +203,7 @@
       const signupResult = await signupRes.json();
       if (signupRes.ok) {
         alert('🎉 Signup successful! Redirecting to dashboard...');
-        // Optional auto-login
+        // ✅ Optional auto-login
         const loginForm = document.createElement('form');
         loginForm.method = 'POST';
         loginForm.action = '/login';
