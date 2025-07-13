@@ -1,196 +1,197 @@
-/* General Reset & Base Styles */
+/* === ENJOYABLE App Styles === */
+
+/* Base Reset */
 body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f4f6f9;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-  }
-  
-  /* Lobby and Room Sections */
-  #lobby, #room {
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  #room {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  /* Header */
-  header {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background-color: #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  }
-  
-  /* Sidebar for Users */
-  #sidebar {
-    width: 250px;
-    padding: 1rem;
-    overflow-y: auto;
-    border-right: 1px solid #ddd;
-    background: #fff;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-  }
-  
-  #userList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  #userList li {
-    padding: 0.5rem;
-    border-bottom: 1px solid #eee;
-    font-weight: 500;
-  }
-  
-  /* Video Area */
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #f4f6f9;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Lobby & Room */
+#lobby, #room {
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Sidebar */
+#sidebar {
+  width: 250px;
+  padding: 1rem;
+  background: #fff;
+  border-right: 1px solid #ddd;
+  overflow-y: auto;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+
+#userList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#userList li {
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+  font-weight: 500;
+}
+
+/* Video Grid */
+#videoArea {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  overflow-y: auto;
+  background: #fafafa;
+}
+
+video {
+  width: 100%;
+  border-radius: 12px;
+  border: 3px solid #ccc;
+  background: black;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Chat Box */
+#chatWindow {
+  width: 100%;
+  max-width: 600px;
+  height: 180px;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.chat-box {
+  height: 150px;
+  overflow-y: auto;
+  margin: 10px auto;
+  width: 60%;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+/* Controls */
+#controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: white;
+  border-top: 1px solid #eee;
+  box-shadow: 0 -1px 4px rgba(0,0,0,0.05);
+}
+
+button {
+  padding: 0.6rem 1.2rem;
+  font-size: 15px;
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background-color: #303f9f;
+}
+
+/* Forms */
+input[type="text"],
+input[type="password"],
+input[type="tel"],
+select {
+  padding: 0.5rem;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus {
+  border-color: #3f51b5;
+}
+
+/* Reaction Emojis */
+.reaction {
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin: 0 4px;
+  transition: transform 0.1s;
+}
+.reaction:hover {
+  transform: scale(1.2);
+}
+
+/* Admin Badge */
+#adminBadge {
+  background: #ff4081;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Target Dropdown */
+#targetSelect {
+  padding: 0.5rem;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-left: 10px;
+}
+
+/* Misc */
+.video-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
   #videoArea {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-    overflow-y: auto;
-    background-color: #fafafa;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
-  
-  video {
-    width: 100%;
-    border-radius: 12px;
-    border: 3px solid #ccc;
-    background: black;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  
-  /* Chat Styles */
-  #chatWindow {
-    height: 180px;
-    overflow-y: auto;
-    border: 1px solid #ccc;
-    background: #fff;
-    margin: 1rem 0;
-    padding: 0.5rem;
-    width: 100%;
-    max-width: 600px;
-    border-radius: 8px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-  }
-  
+
   .chat-box {
-    height: 150px;
-    overflow-y: scroll;
-    margin: 10px auto;
-    width: 60%;
-    background: #fff;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
+    width: 90%;
   }
-  
-  /* Controls */
+
   #controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 1rem;
-    background: #fff;
-    border-top: 1px solid #eee;
-    box-shadow: 0 -1px 4px rgba(0,0,0,0.05);
+    flex-direction: column;
   }
-  
-  button {
-    padding: 0.6rem 1rem;
-    font-size: 16px;
-    background-color: #3f51b5;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-  
-  button:hover {
-    background-color: #303f9f;
-  }
-  
-  input[type="text"], input[type="password"] {
-    padding: 0.5rem;
-    font-size: 16px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    outline: none;
-    transition: border-color 0.2s ease;
-  }
-  
-  input:focus {
-    border-color: #3f51b5;
-  }
-  
-  /* Reactions */
-  .reaction {
-    font-size: 1.5rem;
-    cursor: pointer;
-    margin: 0 4px;
-    transition: transform 0.1s ease;
-  }
-  
-  .reaction:hover {
-    transform: scale(1.2);
-  }
-  
-  /* Layout Wrapper */
-  .video-wrapper {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-top: 20px;
-  }
-  
-  /* Badges & Admin */
-  #adminBadge {
-    background: #ff4081;
-    color: white;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
-  }
-  
-  /* Target Select */
-  #targetSelect {
-    padding: 0.5rem;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    margin-left: 10px;
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    #videoArea {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    }
-  
-    .chat-box {
-      width: 90%;
-    }
-  
-    #controls {
-      flex-direction: column;
-    }
-  }
+}

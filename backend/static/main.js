@@ -1,26 +1,53 @@
-/* ========= main.js – updated & fixed for LiveCast ========= */
-
 const socket = io();
-
 const $ = id => document.getElementById(id);
 
-const lobby        = $('lobby');
-const roomSection  = $('room');
-const roomHeader   = $('roomHeader');
-const adminBadge   = $('adminBadge');
-const userList     = $('userList');
-const chatWindow   = $('chatWindow');
-const chatInput    = $('chatInput');
+const lobby = $('lobby');
+const roomSection = $('room');
+const roomHeader = $('roomHeader');
+const adminBadge = $('adminBadge');
+const userList = $('userList');
+const chatWindow = $('chatWindow');
+const chatInput = $('chatInput');
 const targetSelect = $('targetSelect');
-const localVideo   = $('localVideo');
-const videoArea    = $('videoArea');
+const localVideo = $('localVideo');
+const videoArea = $('videoArea');
 
 let localStream;
 let mediaRecorder;
 let recordedBlobs = [];
 let currentRoomId;
 let isAdmin = false;
-const peers = {}; // sid → SimplePeer
+const peers = {};
+
+window.startStream = async function () {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert("❌ Your browser does not support camera/mic access.");
+    return;
+  }
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideo.srcObject = localStream;
+    localVideo.play();
+  } catch (err) {
+    console.error("🚫 Media access error:", err);
+    alert("Please allow camera/microphone access.");
+  }
+};
+
+async function startLocalMedia() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert("❌ Your browser does not support camera/mic access.");
+    return;
+  }
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideo.srcObject = localStream;
+    localVideo.play();
+  } catch (err) {
+    console.error('Media access error:', err);
+    alert('🚫 Please allow camera and microphone access.');
+  }
+}
 
 $('createBtn').onclick = () => {
   const username = $('lobbyUsername').value.trim() || 'Anonymous';
@@ -35,16 +62,6 @@ $('joinBtn').onclick = () => {
   if (!roomId) return alert('Room ID required');
   socket.emit('join_room', { room_id: roomId, username });
 };
-
-async function startLocalMedia() {
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localVideo.srcObject = localStream;
-  } catch (err) {
-    alert('🚫 Camera/Mic access denied or not available.');
-    console.error('startLocalMedia error:', err);
-  }
-}
 
 function createPeer(remoteSid, initiator) {
   const peer = new SimplePeer({ initiator, stream: localStream });
@@ -166,10 +183,9 @@ document.querySelectorAll('.reaction').forEach(btn => {
 $('toggleMic').onclick = () => toggleTrack('audio');
 $('toggleCam').onclick = () => toggleTrack('video');
 
-function toggleTrack(kind, explicitState) {
+function toggleTrack(kind, state) {
   localStream?.getTracks().forEach(t => {
-    if (t.kind === kind)
-      t.enabled = explicitState !== undefined ? explicitState : !t.enabled;
+    if (t.kind === kind) t.enabled = state !== undefined ? state : !t.enabled;
   });
 }
 
@@ -177,31 +193,29 @@ $('shareScreen').onclick = async () => {
   try {
     const screen = await navigator.mediaDevices.getDisplayMedia({ video: true });
     replaceVideoTrack(screen.getVideoTracks()[0]);
+
     screen.getVideoTracks()[0].onended = () => {
       if (localStream) replaceVideoTrack(localStream.getVideoTracks()[0]);
     };
   } catch (err) {
-    alert('🚫 Screen share not allowed.');
-    console.error('Screen share error:', err);
+    alert('🚫 Screen sharing denied.');
+    console.error(err);
   }
 };
 
 function replaceVideoTrack(newTrack) {
-  const oldTrack = localStream?.getVideoTracks()[0];
-  if (!oldTrack) return;
+  const sender = Object.values(peers)
+    .map(p => p._pc.getSenders().find(s => s.track?.kind === 'video'))
+    .find(Boolean);
 
-  localStream.removeTrack(oldTrack);
-  localStream.addTrack(newTrack);
-
-  Object.values(peers).forEach(p => {
-    const sender = p._pc.getSenders().find(s => s.track?.kind === 'video');
-    if (sender) sender.replaceTrack(newTrack);
-  });
+  if (sender) sender.replaceTrack(newTrack);
+  localStream?.removeTrack(localStream.getVideoTracks()[0]);
+  localStream?.addTrack(newTrack);
+  localVideo.srcObject = localStream;
 }
 
 $('recordBtn').onclick = () => {
-  if (!localStream) return alert('🎙️ Please allow camera/mic before recording.');
-
+  if (!localStream) return alert('🎙️ Please enable mic/camera first.');
   if (mediaRecorder?.state === 'recording') {
     mediaRecorder.stop();
     return;
@@ -209,7 +223,6 @@ $('recordBtn').onclick = () => {
 
   recordedBlobs = [];
   mediaRecorder = new MediaRecorder(localStream, { mimeType: 'video/webm' });
-
   mediaRecorder.ondataavailable = e => e.data.size && recordedBlobs.push(e.data);
   mediaRecorder.onstop = () => {
     const url = URL.createObjectURL(new Blob(recordedBlobs, { type: 'video/webm' }));
@@ -228,10 +241,6 @@ $('adminControls').onclick = e => {
   if (e.target.tagName !== 'BUTTON') return;
   const action = e.target.dataset.action;
   const target = targetSelect.value;
-  if (!target) return alert('Select a user');
+  if (!target) return alert('Select a user first');
   socket.emit('admin_action', { room_id: currentRoomId, action, target });
 };
-
-function requestToSpeak() {
-  socket.emit('request_to_speak');
-}

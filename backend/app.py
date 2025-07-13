@@ -1,73 +1,40 @@
 import eventlet
-eventlet.monkey_patch()
 
 import os
-import sqlite3
 import uuid
-import traceback
-from flask import Flask, render_template, request, redirect, session, url_for
-from flask_socketio import SocketIO, emit, join_room, leave_room
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash
-from flask import Flask, request, jsonify, session
-from flask_cors import CORS
-from twilio.rest import Client
 import random
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
+from twilio.rest import Client
 
-app = Flask(__name__)
+# -------------------------
+# Config & Initialization
+# -------------------------
+eventlet.monkey_patch()
+
+app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = 'your-secret-key'
+
+# SQLite DB Path
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+DB_PATH = os.path.join(BASE_DIR, 'database', 'users.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 CORS(app)
 
-# Twilio credentials
+# -------------------------
+# Twilio Config
+# -------------------------
 TWILIO_ACCOUNT_SID = 'your_account_sid'
 TWILIO_AUTH_TOKEN = 'your_auth_token'
 TWILIO_PHONE_NUMBER = '+1XXXXXXXXXX'
-
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-
-@app.route('/send_otp', methods=['POST'])
-def send_otp():
-    data = request.get_json()
-    mobile = data.get('mobile')
-    if not mobile:
-        return jsonify({'success': False, 'message': 'Mobile number is required'}), 400
-
-    otp = str(random.randint(1000, 9999))
-    session['otp'] = otp
-
-    try:
-        message = client.messages.create(
-            body=f"Your OTP for LiveCast Signup is: {otp}",
-            from_=TWILIO_PHONE_NUMBER,
-            to=mobile  # Should include +91 for India
-        )
-        return jsonify({'success': True, 'message': 'OTP sent successfully'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@app.route('/verify_otp', methods=['POST'])
-def verify_otp():
-    data = request.get_json()
-    entered_otp = data.get('otp')
-    if entered_otp == session.get('otp'):
-        return jsonify({'success': True})
-    else:
-        return jsonify({'success': False, 'message': 'Incorrect OTP'})
-
-app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
-
-# -------------------------
-# Configuration
-# -------------------------
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-DB_PATH = os.path.join(BASE_DIR, 'database', 'users.db')
-
-app.secret_key = 'your_secret_key'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
-
-db = SQLAlchemy(app)
+twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 # -------------------------
 # SQLAlchemy Model
@@ -82,42 +49,79 @@ class User(db.Model):
     room = db.Column(db.String(50))
 
 # -------------------------
-# Routes
+# OTP Routes
+# -------------------------
+@app.route('/send_otp', methods=['POST'])
+def send_otp():
+    data = request.get_json()
+    mobile = data.get('mobile')
+    if not mobile:
+        return jsonify({'success': False, 'message': 'Mobile number is required'}), 400
+
+    otp = str(random.randint(1000, 9999))
+    session['otp'] = otp
+
+    try:
+        twilio_client.messages.create(
+            body=f"Your OTP for LiveCast Signup is: {otp}",
+            from_=TWILIO_PHONE_NUMBER,
+            to=mobile
+        )
+        return jsonify({'success': True, 'message': 'OTP sent successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/verify_otp', methods=['POST'])
+def verify_otp():
+    data = request.get_json()
+    entered_otp = data.get('otp')
+    if entered_otp == session.get('otp'):
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Incorrect OTP'})
+
+# -------------------------
+# Signup API
+# -------------------------
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    mobile = data.get('mobile')
+    is_admin = data.get('is_admin', False)
+
+    if not username or not password:
+        return jsonify({"message": "Username and password required"}), 400
+
+    if db.session.query(User).filter_by(username=username).first():
+        return jsonify({"message": "Username already exists"}), 409
+
+    user = User(username=username, password_hash=generate_password_hash(password), mobile=mobile, is_admin=is_admin)
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({"message": "Signup successful"}), 200
+
+# -------------------------
+# Page Routes
 # -------------------------
 @app.route('/')
-def home():
+def index():
     if 'username' in session:
         return render_template('index.html', username=session['username'])
     return redirect(url_for('login'))
 
-
-from flask import Flask, render_template, request, redirect, url_for
-
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Get form data
-        username = request.form.get('username')
-        password = request.form.get('password')
-        # Validate login
-        return redirect(url_for('index'))
+        username = request.form['username']
+        session['username'] = username
+        return redirect('/')
     return render_template('login.html')
 
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        # Save user to DB
-        return redirect(url_for('login'))
+@app.route('/signup', methods=['GET'])
+def signup_page():
     return render_template('signup.html')
-
 
 @app.route('/logout')
 def logout():
@@ -181,24 +185,15 @@ def join_room_evt(data):
 
 @socketio.on('chat_message')
 def chat_message(data):
-    emit('chat_message', {
-        'sid': request.sid,
-        'text': data['text']
-    }, room=data['room_id'])
+    emit('chat_message', {'sid': request.sid, 'text': data['text']}, room=data['room_id'])
 
 @socketio.on('reaction')
 def reaction(data):
-    emit('reaction', {
-        'sid': request.sid,
-        'emoji': data['emoji']
-    }, room=data['room_id'])
+    emit('reaction', {'sid': request.sid, 'emoji': data['emoji']}, room=data['room_id'])
 
 @socketio.on('signal')
 def signal(data):
-    emit('signal', {
-        'sid': request.sid,
-        'signal': data['signal']
-    }, room=data['target'])
+    emit('signal', {'sid': request.sid, 'signal': data['signal']}, room=data['target'])
 
 @socketio.on('admin_action')
 def admin_action(data):
@@ -217,9 +212,6 @@ def admin_action(data):
     else:
         emit('admin_action', {'action': action}, room=target)
 
-# -------------------------
-# Helper
-# -------------------------
 def _update_user_list(room_id):
     room = rooms.get(room_id)
     if not room:
@@ -228,20 +220,18 @@ def _update_user_list(room_id):
     emit('user_list', users, room=room_id)
 
 # -------------------------
-# Run Server
+# Start Server
 # -------------------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-
-        # Create default admin
-        username = "admin"
-        password = "admin123"
-        password_hash = generate_password_hash(password)
-        if not User.query.filter_by(username=username).first():
-            new_admin = User(username=username, password_hash=password_hash, is_admin=True)
-            db.session.add(new_admin)
+        if not User.query.filter_by(username='admin').first():
+            db.session.add(User(
+                username='admin',
+                password_hash=generate_password_hash('admin123'),
+                is_admin=True
+            ))
             db.session.commit()
-            print("✅ User created: admin / admin123")
+            print("✅ Created admin user: admin / admin123")
 
     socketio.run(app, host='0.0.0.0', port=5001, debug=True)

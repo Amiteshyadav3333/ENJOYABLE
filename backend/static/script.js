@@ -19,16 +19,16 @@ function login() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   })
-  .then(res => res.json())
-  .then(data => {
-    if (data.message.includes("successful")) {
-      document.getElementById("login-section").style.display = "none";
-      document.getElementById("call-section").style.display = "block";
-      joinRoom();
-    } else {
-      alert(data.message);
-    }
-  });
+    .then(res => res.json())
+    .then(data => {
+      if (data.message.includes("successful")) {
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("call-section").style.display = "block";
+        joinRoom();
+      } else {
+        alert(data.message);
+      }
+    });
 }
 
 // === Join Room ===
@@ -59,25 +59,30 @@ socket.on("chat_message", ({ username, msg }) => {
 
 // === WebRTC Offer/Answer Exchange ===
 socket.on("approved", async () => {
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  document.getElementById("localVideo").srcObject = localStream;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    document.getElementById("localVideo").srcObject = localStream;
 
-  peerConnection = new RTCPeerConnection(config);
-  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    peerConnection = new RTCPeerConnection(config);
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-  peerConnection.onicecandidate = e => {
-    if (e.candidate) {
-      socket.emit("ice-candidate", { to: remoteSid, candidate: e.candidate });
-    }
-  };
+    peerConnection.onicecandidate = e => {
+      if (e.candidate) {
+        socket.emit("ice-candidate", { to: remoteSid, candidate: e.candidate });
+      }
+    };
 
-  peerConnection.ontrack = e => {
-    document.getElementById("remoteVideo").srcObject = e.streams[0];
-  };
+    peerConnection.ontrack = e => {
+      document.getElementById("remoteVideo").srcObject = e.streams[0];
+    };
 
-  const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
-  socket.emit("offer", { sdp: offer, to: remoteSid });
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    socket.emit("offer", { sdp: offer, to: remoteSid });
+  } catch (err) {
+    console.error("Error starting stream:", err);
+    alert("❌ Camera/mic access denied or not available.");
+  }
 });
 
 socket.on("user_joined", ({ sid }) => {

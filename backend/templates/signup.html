@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Signup – ENJOYABLE</title>
+  <title>Signup – LiveCast</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-  
     body {
       margin: 0;
       padding: 0;
@@ -27,68 +26,73 @@
       max-width: 420px;
     }
 
-    .signup-container h2 {
+    h2 {
+      text-align: center;
       margin-bottom: 20px;
       color: #333;
-      text-align: center;
     }
 
-    .signup-container label {
+    label {
       font-size: 14px;
-      color: #333;
-      display: block;
       margin-top: 12px;
-      margin-bottom: 4px;
+      display: block;
+      color: #333;
     }
 
-    .signup-container input[type="text"],
-    .signup-container input[type="password"],
-    .signup-container input[type="tel"] {
+    input[type="text"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="number"] {
       width: 100%;
       padding: 10px;
+      font-size: 15px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      font-size: 15px;
     }
 
-    .signup-container .checkbox-label {
+    .checkbox-label {
       display: flex;
       align-items: center;
       margin-top: 12px;
     }
 
-    .signup-container .checkbox-label input {
+    .checkbox-label input {
       margin-right: 8px;
     }
 
-    .signup-container button {
+    button {
       width: 100%;
+      padding: 12px;
       margin-top: 20px;
       background-color: #28a745;
       color: white;
-      padding: 12px;
+      font-size: 16px;
       border: none;
       border-radius: 6px;
-      font-size: 16px;
       cursor: pointer;
       transition: background 0.3s;
     }
 
-    .signup-container button:hover {
+    button:hover {
       background-color: #218838;
     }
 
-    .signup-container p {
+    #otpSection {
+      display: none;
+      margin-top: 20px;
+    }
+
+    p {
       margin-top: 16px;
       text-align: center;
     }
 
-    .signup-container a {
+    a {
       color: #007bff;
       text-decoration: none;
     }
 
-    .signup-container a:hover {
+    a:hover {
       text-decoration: underline;
     }
   </style>
@@ -97,72 +101,97 @@
   <div class="signup-container">
     <h2>📝 Create Your LiveCast Account</h2>
     <form id="signupForm">
-      <label for="username">Username</label>
+      <label>Username</label>
       <input type="text" name="username" required />
 
-      <label for="password">Password</label>
+      <label>Password</label>
       <input type="password" name="password" required />
 
-      <label for="mobile">Mobile (optional)</label>
-      <input type="tel" name="mobile" />
+      <label>Mobile Number</label>
+      <input type="tel" name="mobile" required placeholder="9876543210" />
 
       <label class="checkbox-label">
         <input type="checkbox" name="is_admin" />
         Register as Admin
       </label>
 
-      <button type="submit">Sign Up</button>
+      <button type="button" onclick="sendOTP()">📤 Send OTP</button>
+
+      <div id="otpSection">
+        <label>Enter OTP</label>
+        <input type="number" id="otpInput" required placeholder="4-digit OTP" />
+        <button type="submit">✅ Verify & Sign Up</button>
+      </div>
     </form>
+
     <p>Already have an account? <a href="/login">Login here</a></p>
   </div>
 
   <script>
     const form = document.getElementById('signupForm');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
-      data.is_admin = form.is_admin.checked;
+    const otpSection = document.getElementById('otpSection');
+    const otpInput = document.getElementById('otpInput');
 
-      const response = await fetch('/signup', {
+    let signupData = {};
+
+    async function sendOTP() {
+      const formData = new FormData(form);
+      signupData = Object.fromEntries(formData.entries());
+      signupData.is_admin = form.is_admin.checked;
+
+      if (!signupData.mobile.startsWith('+91')) {
+        signupData.mobile = '+91' + signupData.mobile;
+      }
+
+      const res = await fetch('/send_otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ mobile: signupData.mobile })
       });
 
-      const result = await response.json();
-      if (response.ok) {
-        alert("Signup successful! Please login.");
-        window.location.href = "/login";
+      const result = await res.json();
+      if (result.success) {
+        otpSection.style.display = 'block';
+        alert('✅ OTP sent to your mobile number.');
       } else {
-        alert(result.message || "Signup failed. Try again.");
+        alert(result.message || '❌ OTP sending failed.');
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const otp = otpInput.value.trim();
+      if (!otp || otp.length !== 4) {
+        return alert('❗ Please enter a valid 4-digit OTP.');
+      }
+
+      const otpVerify = await fetch('/verify_otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp })
+      });
+
+      const otpResult = await otpVerify.json();
+      if (!otpResult.success) {
+        return alert('❌ Incorrect OTP.');
+      }
+
+      // Proceed with signup
+      const signupRes = await fetch('/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(signupData)
+      });
+
+      const signupResult = await signupRes.json();
+      if (signupRes.ok) {
+        alert('🎉 Signup successful! Please login.');
+        window.location.href = '/login';
+      } else {
+        alert(signupResult.message || 'Signup failed.');
       }
     });
   </script>
 </body>
 </html>
-signupForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(signupForm);
-  signupData = Object.fromEntries(formData.entries());
-  signupData.is_admin = formData.get("is_admin") === "on";
-
-  // 🟠 Twilio: Mobile must start with +91 (India)
-  if (!signupData.mobile.startsWith('+91')) {
-    signupData.mobile = '+91' + signupData.mobile;
-  }
-
-  const otpRes = await fetch('/send_otp', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mobile: signupData.mobile })
-  });
-
-  const otpResult = await otpRes.json();
-  if (otpResult.success) {
-    otpSection.style.display = "block";
-    alert("OTP sent to your mobile number.");
-  } else {
-    alert(otpResult.message || "OTP failed.");
-  }
-});

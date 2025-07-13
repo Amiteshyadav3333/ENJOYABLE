@@ -1,43 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - LiveCast</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <title>LiveCast</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="/static/main.js" defer></script>
+  <style>
+    video { width: 300px; border: 2px solid black; margin: 10px; }
+    #videoArea { display: flex; flex-wrap: wrap; }
+    #chatWindow { height: 100px; overflow-y: scroll; border: 1px solid #ccc; margin-top: 10px; padding: 5px; }
+    .reaction { font-size: 24px; cursor: pointer; margin: 5px; }
+  </style>
 </head>
 <body>
-    <h2>Login</h2>
-    <form id="loginForm">
-        <label>Username:</label><br>
-        <input type="text" name="username" required><br><br>
+  <div id="lobby">
+    <h2>Welcome to LiveCast!</h2>
+    <input id="lobbyUsername" placeholder="Your name" />
+    <input id="roomName" placeholder="Create room name" />
+    <button id="createBtn">Create Room</button>
+    <input id="joinRoomId" placeholder="Join room ID" />
+    <button id="joinBtn">Join Room</button>
+  </div>
 
-        <label>Password:</label><br>
-        <input type="password" name="password" required><br><br>
+  <div id="room" hidden>
+    <h2 id="roomHeader"></h2>
+    <span id="adminBadge" hidden>⭐ Admin</span>
+    <button id="leaveBtn">Leave</button>
 
-        <button type="submit">Login</button>
-    </form>
+    <div id="adminControls" hidden>
+      <h4>Admin Controls:</h4>
+      <select id="targetSelect"></select>
+      <button data-action="mute_audio">Mute Audio</button>
+      <button data-action="mute_video">Mute Video</button>
+      <button data-action="kick">Kick User</button>
+    </div>
 
-    <p>Don't have an account? <a href="/signup">Signup here</a></p>
+    <div id="videoArea">
+      <video id="localVideo" autoplay muted playsinline></video>
+    </div>
 
-    <script>
-        const form = document.getElementById('loginForm');
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
+    <div>
+      <button id="toggleMic">🎙️ Toggle Mic</button>
+      <button id="toggleCam">🎥 Toggle Cam</button>
+      <button onclick="startStream()">▶️ Start Camera & Mic</button>
+      <button id="shareScreen">🖥️ Share Screen</button>
+      <button id="recordBtn">⏺️ Start/Stop Recording</button>
+    </div>
 
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
+    <div id="chat">
+      <h4>Chat</h4>
+      <div id="chatWindow"></div>
+      <input id="chatInput" placeholder="Type message..." />
+      <button id="sendChat">Send</button>
+      <div>
+        <span class="reaction">👍</span>
+        <span class="reaction">😂</span>
+        <span class="reaction">👏</span>
+        <span class="reaction">❤️</span>
+      </div>
+    </div>
 
-            const result = await response.json();
-            if (response.ok) {
-                window.location.href = '/';
-            } else {
-                alert(result.message || "Login failed");
-            }
-        });
-    </script>
+    <h4>Participants:</h4>
+    <ul id="userList"></ul>
+  </div>
 </body>
 </html>

@@ -2,16 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Signup – ENJOYABLE</title>
+  <title>Login & Signup – ENJOYABLE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
-    /* ... [unchanged CSS styles from your code] ... */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f3f3;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 30px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 5px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #007BFF;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .checkbox-label input {
+      margin-right: 8px;
+    }
+
+    hr {
+      margin: 40px 0;
+      border: none;
+      border-top: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
-  <div class="signup-container">
-    <h2>📝 Create your ENJOYABLE Account</h2>
+  <div class="container">
+    <h2>📝 Create Your ENJOYABLE Account</h2>
     <form id="signupForm">
       <label for="username">Username</label>
       <input type="text" name="username" required />
@@ -30,14 +98,14 @@
       <button type="submit">Sign Up</button>
     </form>
 
-    <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ccc;">
+    <hr>
 
     <h2>🔐 Login to Your Account</h2>
-    <form method="post" action="/login">
-      <label for="login_username">Username</label>
+    <form method="POST" action="/login">
+      <label for="username">Username</label>
       <input type="text" name="username" required />
 
-      <label for="login_password">Password</label>
+      <label for="password">Password</label>
       <input type="password" name="password" required />
 
       <button type="submit">Login</button>
@@ -45,25 +113,29 @@
   </div>
 
   <script>
-    const form = document.getElementById('signupForm');
-    form.addEventListener('submit', async (e) => {
+    const signupForm = document.getElementById('signupForm');
+    signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const formData = new FormData(form);
+      const formData = new FormData(signupForm);
       const data = Object.fromEntries(formData.entries());
-      data.is_admin = form.is_admin.checked;
+      data.is_admin = signupForm.is_admin.checked;
 
-      const response = await fetch('/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
+      try {
+        const res = await fetch('/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
 
-      const result = await response.json();
-      if (response.ok) {
-        alert("Signup successful! Please login.");
-        window.location.href = "/login";
-      } else {
-        alert(result.message || "Signup failed. Try again.");
+        const result = await res.json();
+        if (res.ok) {
+          alert('✅ Signup successful! Please login.');
+          window.location.href = '/login';
+        } else {
+          alert(result.message || '❌ Signup failed. Try again.');
+        }
+      } catch (err) {
+        alert('❌ Signup error: ' + err.message);
       }
     });
   </script>
