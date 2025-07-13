@@ -133,14 +133,24 @@
     const otpInput = document.getElementById('otpInput');
 
     let signupData = {};
+    let otpTimestamp = null;
 
     async function sendOTP() {
       const formData = new FormData(form);
       signupData = Object.fromEntries(formData.entries());
       signupData.is_admin = form.is_admin.checked;
 
+      if (!/^\d{10}$/.test(signupData.mobile)) {
+        return alert('❗ Enter a valid 10-digit mobile number');
+      }
+
       if (!signupData.mobile.startsWith('+91')) {
         signupData.mobile = '+91' + signupData.mobile;
+      }
+
+      const password = signupData.password;
+      if (password.length < 6 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+        return alert('🔐 Password must be at least 6 characters long, contain a number and an uppercase letter.');
       }
 
       const res = await fetch('/send_otp', {
@@ -152,7 +162,8 @@
       const result = await res.json();
       if (result.success) {
         otpSection.style.display = 'block';
-        alert('✅ OTP sent to your mobile number.');
+        otpTimestamp = Date.now();
+        alert('✅ OTP sent to your mobile number. Expires in 5 minutes.');
       } else {
         alert(result.message || '❌ OTP sending failed.');
       }
@@ -160,6 +171,10 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      if (!otpTimestamp || Date.now() - otpTimestamp > 300000) {
+        return alert('❌ OTP expired. Please request a new one.');
+      }
 
       const otp = otpInput.value.trim();
       if (!otp || otp.length !== 4) {
@@ -186,8 +201,16 @@
 
       const signupResult = await signupRes.json();
       if (signupRes.ok) {
-        alert('🎉 Signup successful! Please login.');
-        window.location.href = '/login';
+        alert('🎉 Signup successful! Redirecting to dashboard...');
+        // Optional auto-login
+        const loginForm = document.createElement('form');
+        loginForm.method = 'POST';
+        loginForm.action = '/login';
+        loginForm.innerHTML = `
+          <input type="hidden" name="username" value="${signupData.username}" />
+        `;
+        document.body.appendChild(loginForm);
+        loginForm.submit();
       } else {
         alert(signupResult.message || 'Signup failed.');
       }
