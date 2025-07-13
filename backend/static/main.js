@@ -21,8 +21,7 @@ const peers = {};
 
 window.startStream = async function () {
   if (!navigator.mediaDevices?.getUserMedia) {
-    alert("❌ Your browser does not support camera/mic access.");
-    return;
+    return alert("❌ Browser does not support camera/mic access.");
   }
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -30,49 +29,42 @@ window.startStream = async function () {
     localVideo.play();
   } catch (err) {
     console.error("🚫 Media access error:", err);
-    alert("Please allow camera/microphone access.");
+    alert("Please allow camera and mic access.");
   }
 };
 
 async function startLocalMedia() {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    alert("❌ Your browser does not support camera/mic access.");
-    return;
-  }
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideo.srcObject = localStream;
     localVideo.play();
   } catch (err) {
-    console.error('Media access error:', err);
-    alert('🚫 Please allow camera and microphone access.');
+    console.error('Media error:', err);
+    alert('Please allow camera/microphone access.');
   }
 }
 
-$('createBtn').onclick = () => {
-  const username = $('lobbyUsername').value.trim() || 'Anonymous';
-  const roomName = $('roomName').value.trim();
-  if (!roomName) return alert('Room name required');
-  socket.emit('create_room', { username, room_name: roomName });
-};
-
-$('joinBtn').onclick = () => {
-  const username = $('lobbyUsername').value.trim() || 'Anonymous';
-  const roomId = $('joinRoomId').value.trim();
-  if (!roomId) return alert('Room ID required');
-  socket.emit('join_room', { room_id: roomId, username });
-};
-
 function createPeer(remoteSid, initiator) {
-  const peer = new SimplePeer({ initiator, stream: localStream });
+  const peer = new SimplePeer({ initiator, trickle: false, stream: localStream });
 
   peer.on('signal', data => {
-    socket.emit('signal', { room_id: currentRoomId, target: remoteSid, signal: data });
+    socket.emit('signal', {
+      room_id: currentRoomId,
+      target: remoteSid,
+      signal: data
+    });
   });
 
-  peer.on('stream', stream => addRemoteVideo(remoteSid, stream));
+  peer.on('stream', stream => {
+    console.log("Received remote stream from", remoteSid);
+    addRemoteVideo(remoteSid, stream);
+  });
+
   peer.on('close', () => removeRemoteVideo(remoteSid));
-  peer.on('error', () => removeRemoteVideo(remoteSid));
+  peer.on('error', err => {
+    console.error("Peer error", err);
+    removeRemoteVideo(remoteSid);
+  });
 
   peers[remoteSid] = peer;
 }
@@ -87,6 +79,7 @@ function addRemoteVideo(sid, stream) {
     videoArea.appendChild(vid);
   }
   vid.srcObject = stream;
+  vid.play();
 }
 
 function removeRemoteVideo(sid) {
@@ -106,6 +99,20 @@ function refreshTargetSelect() {
     targetSelect.appendChild(opt);
   });
 }
+
+$('createBtn').onclick = () => {
+  const username = $('lobbyUsername').value.trim() || 'Anonymous';
+  const roomName = $('roomName').value.trim();
+  if (!roomName) return alert('Room name required');
+  socket.emit('create_room', { username, room_name: roomName });
+};
+
+$('joinBtn').onclick = () => {
+  const username = $('lobbyUsername').value.trim() || 'Anonymous';
+  const roomId = $('joinRoomId').value.trim();
+  if (!roomId) return alert('Room ID required');
+  socket.emit('join_room', { room_id: roomId, username });
+};
 
 socket.on('room_created', async ({ room_id }) => {
   await startLocalMedia();
@@ -177,7 +184,9 @@ $('sendChat').onclick = () => {
 };
 
 document.querySelectorAll('.reaction').forEach(btn => {
-  btn.onclick = () => socket.emit('reaction', { room_id: currentRoomId, emoji: btn.textContent });
+  btn.onclick = () => {
+    socket.emit('reaction', { room_id: currentRoomId, emoji: btn.textContent });
+  };
 });
 
 $('toggleMic').onclick = () => toggleTrack('audio');
@@ -191,10 +200,10 @@ function toggleTrack(kind, state) {
 
 $('shareScreen').onclick = async () => {
   try {
-    const screen = await navigator.mediaDevices.getDisplayMedia({ video: true });
-    replaceVideoTrack(screen.getVideoTracks()[0]);
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    replaceVideoTrack(screenStream.getVideoTracks()[0]);
 
-    screen.getVideoTracks()[0].onended = () => {
+    screenStream.getVideoTracks()[0].onended = () => {
       if (localStream) replaceVideoTrack(localStream.getVideoTracks()[0]);
     };
   } catch (err) {
@@ -215,7 +224,7 @@ function replaceVideoTrack(newTrack) {
 }
 
 $('recordBtn').onclick = () => {
-  if (!localStream) return alert('🎙️ Please enable mic/camera first.');
+  if (!localStream) return alert('🎙️ Enable mic/camera first.');
   if (mediaRecorder?.state === 'recording') {
     mediaRecorder.stop();
     return;
