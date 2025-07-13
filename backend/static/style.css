@@ -21,6 +21,8 @@ header {
   padding: 1rem;
   background: white;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+  text-align: center;
 }
 
 /* Lobby & Room */
@@ -136,6 +138,8 @@ select {
   border: 1px solid #ccc;
   outline: none;
   transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 input:focus {
@@ -181,10 +185,12 @@ input:focus {
   margin-top: 20px;
 }
 
-/* Responsive */
+/* ======================= */
+/* 🔻 Responsive Styles 🔻 */
+/* ======================= */
 @media (max-width: 768px) {
   #videoArea {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 
   .chat-box {
@@ -193,5 +199,49 @@ input:focus {
 
   #controls {
     flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  header {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  button {
+    width: 100%;
+    font-size: 16px;
+  }
+
+  #sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+    box-shadow: none;
+  }
+
+  input,
+  select {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  video {
+    height: auto;
+  }
+
+  .chat-box {
+    font-size: 14px;
+    height: 130px;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 10px;
+  }
+
+  input {
+    font-size: 14px;
   }
 }
