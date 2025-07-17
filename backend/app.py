@@ -1,10 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
 
-import os
-import re
-import uuid
-import random
+import os, re, uuid, random
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, session, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -25,13 +22,13 @@ db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 CORS(app)
 
-# Twilio Config
-TWILIO_ACCOUNT_SID = 'your_account_sid'
-TWILIO_AUTH_TOKEN = 'your_auth_token'
+# Twilio config
+TWILIO_ACCOUNT_SID = 'your_sid'
+TWILIO_AUTH_TOKEN = 'your_token'
 TWILIO_PHONE_NUMBER = '+1XXXXXXXXXX'
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
-# SQLAlchemy Model
+# Database Model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True)
@@ -41,7 +38,7 @@ class User(db.Model):
     sid = db.Column(db.String(100))
     room = db.Column(db.String(50))
 
-# ------------------- OTP Handling ---------------------
+# ---------------- OTP ----------------
 @app.route('/send_otp', methods=['POST'])
 def send_otp():
     data = request.get_json()
@@ -51,18 +48,17 @@ def send_otp():
         return jsonify({'success': False, 'message': 'Invalid mobile number'}), 400
 
     otp = str(random.randint(1000, 9999))
-    otp = str(random.randint(1000, 9999))
-    print("OTP is:", otp)
     session['otp'] = otp
     session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+    print("OTP is:", otp)
 
     try:
         twilio_client.messages.create(
-            body=f"Your OTP for LiveCast Signup is: {otp}",
+            body=f"Your OTP for LiveCast is: {otp}",
             from_=TWILIO_PHONE_NUMBER,
             to=mobile
         )
-        return jsonify({'success': True, 'message': 'OTP sent successfully'})
+        return jsonify({'success': True, 'message': 'OTP sent'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -82,15 +78,11 @@ def verify_otp():
         return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Incorrect OTP'})
 
-# ------------------- Signup ---------------------
+# ---------------- Signup/Login ----------------
 def is_strong_password(password):
-    return (
-        len(password) >= 8 and
-        re.search(r'[A-Z]', password) and
-        re.search(r'[a-z]', password) and
-        re.search(r'\d', password) and
-        re.search(r'[!@#$%^&*]', password)
-    )
+    return (len(password) >= 8 and re.search(r'[A-Z]', password) and
+            re.search(r'[a-z]', password) and re.search(r'\d', password) and
+            re.search(r'[!@#$%^&*]', password))
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -104,28 +96,24 @@ def signup():
         return jsonify({"message": "Username and password required"}), 400
 
     if not is_strong_password(password):
-        return jsonify({"message": "Password must be 8+ chars with uppercase, lowercase, number, and symbol."}), 400
+        return jsonify({"message": "Weak password"}), 400
 
     if not re.match(r'^\+91[6-9]\d{9}$', mobile or ''):
         return jsonify({"message": "Invalid mobile number"}), 400
 
     if db.session.query(User).filter_by(username=username).first():
-        return jsonify({"message": "Username already exists"}), 409
+        return jsonify({"message": "Username exists"}), 409
 
-    user = User(
-        username=username,
-        password_hash=generate_password_hash(password),
-        mobile=mobile,
-        is_admin=is_admin
-    )
+    user = User(username=username,
+                password_hash=generate_password_hash(password),
+                mobile=mobile,
+                is_admin=is_admin)
     db.session.add(user)
     db.session.commit()
 
-    # ✅ Auto-login
     session['username'] = username
-    return jsonify({"message": "Signup successful"}), 200
+    return jsonify({"message": "Signup successful"})
 
-# ------------------- Pages ---------------------
 @app.route('/')
 def index():
     if 'username' in session:
@@ -149,7 +137,7 @@ def logout():
     session.clear()
     return redirect('/login')
 
-# ------------------- Socket.IO ---------------------
+# ---------------- WebRTC / Socket.IO ----------------
 rooms = {}
 
 @socketio.on('connect')
@@ -196,6 +184,7 @@ def join_room_evt(data):
     if not room:
         emit('error', {'msg': 'Room not found'})
         return
+
     room['participants'][request.sid] = {'username': username}
     join_room(room_id)
     emit('user_joined', {'sid': request.sid, 'username': username}, room=room_id)
@@ -212,7 +201,11 @@ def reaction(data):
 
 @socketio.on('signal')
 def signal(data):
-    emit('signal', {'sid': request.sid, 'signal': data['signal']}, room=data['target'])
+    # Relay signal to target peer
+    emit('signal', {
+        'sid': request.sid,
+        'signal': data['signal']
+    }, room=data['target'])
 
 @socketio.on('admin_action')
 def admin_action(data):
@@ -237,16 +230,12 @@ def _update_user_list(room_id):
     users = [{'sid': sid, 'username': info['username']} for sid, info in room['participants'].items()]
     emit('user_list', users, room=room_id)
 
-# ------------------- Run Server ---------------------
+# ---------------- Run ----------------
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username='admin').first():
-            db.session.add(User(
-                username='admin',
-                password_hash=generate_password_hash('admin123'),
-                is_admin=True
-            ))
+            db.session.add(User(username='admin', password_hash=generate_password_hash('admin123'), is_admin=True))
             db.session.commit()
-            print("✅ Created admin user: admin / admin123")
+            print("✅ Admin user created: admin / admin123")
     socketio.run(app, host='0.0.0.0', port=5001, debug=True)
