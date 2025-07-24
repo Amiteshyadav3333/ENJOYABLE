@@ -1,7 +1,10 @@
 import eventlet
 eventlet.monkey_patch()
 
-import os, re, uuid, random
+import os
+import re
+import uuid
+import random
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, session, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -13,6 +16,7 @@ from twilio.rest import Client
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = 'your-secret-key'
 
+# Database configuration
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DB_PATH = os.path.join(BASE_DIR, 'database', 'users.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
@@ -22,7 +26,7 @@ db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 CORS(app)
 
-# Twilio config
+# Twilio configuration
 TWILIO_ACCOUNT_SID = 'your_sid'
 TWILIO_AUTH_TOKEN = 'your_token'
 TWILIO_PHONE_NUMBER = '+1XXXXXXXXXX'
@@ -201,7 +205,6 @@ def reaction(data):
 
 @socketio.on('signal')
 def signal(data):
-    # Relay signal to target peer
     emit('signal', {
         'sid': request.sid,
         'signal': data['signal']

@@ -1,139 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>LiveCast</title>
-
-  <!-- Socket.IO -->
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-  <!-- SimplePeer -->
-  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
-
-  <!-- Main logic -->
-  <script src="/static/main.js" defer></script>
-
+  <meta charset="UTF-8">
+  <title>ENJOYABLE - Video Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}"> 
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f4f4f4;
       padding: 20px;
-      background-color: #f7f7f7;
+      text-align: center;
     }
-
-    h2, h4 {
-      margin-bottom: 10px;
+    #liveArea {
+      display: none;
     }
-
-    input, button, select {
-      padding: 8px;
-      margin: 5px;
-    }
-
     video {
       width: 300px;
-      border: 2px solid #444;
       margin: 10px;
+      border: 2px solid #444;
       border-radius: 10px;
     }
-
-    #videoArea {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-    }
-
-    #chatWindow {
+    #chatBox {
+      width: 80%;
       height: 150px;
-      overflow-y: auto;
+      margin: 10px auto;
       border: 1px solid #ccc;
-      padding: 10px;
+      overflow-y: scroll;
+      padding: 5px;
       background: #fff;
-      margin-bottom: 10px;
     }
-
-    .reaction {
-      font-size: 24px;
-      cursor: pointer;
+    button {
       margin: 5px;
-    }
-
-    #adminControls {
-      margin-top: 20px;
-      border: 1px dashed #888;
       padding: 10px;
-      background: #f0f0f0;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
     }
-
-    #room[hidden] {
-      display: none;
+    button:hover {
+      background-color: #45a049;
     }
-
-    #lobby[hidden] {
-      display: none;
+    input {
+      padding: 8px;
+      margin: 5px;
+      width: 200px;
     }
   </style>
 </head>
 <body>
+
   <!-- Lobby -->
   <div id="lobby">
-    <h2>Welcome to LiveCast!</h2>
-    <input id="lobbyUsername" placeholder="Enter your name" />
-    <br><br>
-    <input id="roomName" placeholder="Create room name" />
-    <button id="createBtn">Create Room</button>
-    <br><br>
-    <input id="joinRoomId" placeholder="Join room ID" />
+    <h1>Welcome to ENJOYABLE</h1>
+    <input type="text" id="lobbyUsername" placeholder="Enter your name" /><br>
+    <input type="text" id="roomName" placeholder="Create Room Name" />
+    <button id="createBtn">Create Room</button><br>
+    <input type="text" id="joinRoomId" placeholder="Enter Room ID to Join" />
     <button id="joinBtn">Join Room</button>
   </div>
 
-  <!-- Room -->
-  <div id="room" hidden>
-    <h2 id="roomHeader"></h2>
-    <span id="adminBadge" hidden>⭐ You are the Admin</span>
-    <button id="leaveBtn">Leave Room</button>
-
-    <!-- Admin Controls -->
-    <div id="adminControls" hidden>
-      <h4>Admin Controls:</h4>
-      <select id="targetSelect">
-        <option value="">-- Select User --</option>
-      </select>
-      <button data-action="mute_audio">Mute Audio</button>
-      <button data-action="mute_video">Mute Video</button>
-      <button data-action="kick">Kick User</button>
-    </div>
-
-    <!-- Video Area -->
-    <div id="videoArea">
+  <!-- Live Area -->
+  <div id="liveArea">
+    <h2 id="roomTitle"></h2>
+    <div>
       <video id="localVideo" autoplay muted playsinline></video>
     </div>
+    <div id="videoArea"></div>
 
-    <!-- Media Controls -->
     <div>
-      <button id="startMediaBtn">▶️ Start Camera & Mic</button>
-      <button id="toggleMic">🎙️ Toggle Mic</button>
-      <button id="toggleCam">🎥 Toggle Cam</button>
-      <button id="shareScreen">🖥️ Share Screen</button>
-      <button id="recordBtn">⏺️ Start/Stop Recording</button>
+      <button id="toggleMic">Toggle Mic</button>
+      <button id="toggleCam">Toggle Cam</button>
+      <button id="shareScreen">Share Screen</button>
+      <button id="recordBtn">Start Recording</button>
+      <button id="leaveBtn">Leave</button>
     </div>
 
-    <!-- Chat Box -->
-    <div id="chat">
-      <h4>Live Chat</h4>
-      <div id="chatWindow"></div>
-      <input id="chatInput" placeholder="Type message..." />
+    <div>
+      <input type="text" id="chatMsg" placeholder="Type your message..." />
       <button id="sendChat">Send</button>
-      <div>
-        <span class="reaction">👍</span>
-        <span class="reaction">😂</span>
-        <span class="reaction">👏</span>
-        <span class="reaction">❤️</span>
-      </div>
+      <div id="chatBox"></div>
     </div>
 
-    <!-- Participants List -->
-    <h4>Participants</h4>
-    <ul id="userList"></ul>
+    <div>
+      <button class="reaction">👍</button>
+      <button class="reaction">😂</button>
+      <button class="reaction">❤️</button>
+      <button class="reaction">🔥</button>
+    </div>
   </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script> 
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
