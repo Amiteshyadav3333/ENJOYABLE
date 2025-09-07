@@ -19,25 +19,23 @@ def quick_test():
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    print(f'Login data received: {data}')
-    
-    username = data.get('username') if data else None
-    password = data.get('password') if data else None
-    
-    print(f'Username: {username}, Password: {password}')
-    print(f'Available users: {list(users.keys())}')
-    
-    if username in users and users[username] == password:
-        return jsonify({
-            'message': 'Login successful',
-            'user': {
-                'id': 1,
-                'username': username,
-                'is_creator': True
-            }
-        })
-    return jsonify({'error': f'Invalid credentials. Got username: {username}, password: {password}'}), 401
+    try:
+        data = request.get_json()
+        username = data.get('username') if data else None
+        password = data.get('password') if data else None
+        
+        if username in users and users[username] == password:
+            return jsonify({
+                'message': 'Login successful',
+                'user': {
+                    'id': 1,
+                    'username': username,
+                    'is_creator': True
+                }
+            })
+        return jsonify({'error': 'Invalid credentials'}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/register', methods=['POST'])
 def register():
