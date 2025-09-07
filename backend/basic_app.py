@@ -13,11 +13,20 @@ podcasts = []
 def index():
     return send_from_directory('../frontend', 'simple.html')
 
+@app.route('/quick')
+def quick_test():
+    return send_from_directory('../frontend', 'quick_test.html')
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
+    print(f'Login data received: {data}')
+    
+    username = data.get('username') if data else None
+    password = data.get('password') if data else None
+    
+    print(f'Username: {username}, Password: {password}')
+    print(f'Available users: {list(users.keys())}')
     
     if username in users and users[username] == password:
         return jsonify({
@@ -28,7 +37,7 @@ def login():
                 'is_creator': True
             }
         })
-    return jsonify({'error': 'Invalid credentials'}), 401
+    return jsonify({'error': f'Invalid credentials. Got username: {username}, password: {password}'}), 401
 
 @app.route('/api/register', methods=['POST'])
 def register():

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        input, button { padding: 10px; margin: 5px; }
+        button { background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Quick Login Test</h1>
+    
+    <div>
+        <input type="text" id="user" placeholder="Username" value="admin">
+        <input type="password" id="pass" placeholder="Password" value="admin123">
+        <button onclick="testLogin()">Login</button>
+    </div>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #333;"></div>
+
+    <script>
+        function testLogin() {
+            const username = document.getElementById('user').value;
+            const password = document.getElementById('pass').value;
+            
+            console.log('Sending:', { username, password });
+            
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => {
+                console.log('Status:', res.status);
+                return res.json();
+            })
+            .then(data => {
+                console.log('Response:', data);
+                document.getElementById('result').innerHTML = JSON.stringify(data, null, 2);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                document.getElementById('result').innerHTML = 'Error: ' + err.message;
+            });
+        }
+    </script>
+</body>
+</html>

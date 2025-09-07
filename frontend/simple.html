@@ -62,6 +62,8 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
+            console.log('Login attempt:', { username, password });
+            
             if (!username || !password) {
                 alert('Please enter username and password');
                 return;
@@ -95,6 +97,8 @@
         function register() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            
+            console.log('Register attempt:', { username, password });
             
             if (!username || !password) {
                 alert('Please enter username and password');
