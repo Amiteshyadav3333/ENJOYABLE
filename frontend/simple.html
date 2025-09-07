@@ -62,13 +62,22 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
+            if (!username || !password) {
+                alert('Please enter username and password');
+                return;
+            }
+            
             fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             })
-            .then(res => res.json())
+            .then(res => {
+                console.log('Response status:', res.status);
+                return res.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
                 if (data.user) {
                     currentUser = data.user;
                     showMainSection();
@@ -76,6 +85,10 @@
                 } else {
                     alert(data.error || 'Login failed');
                 }
+            })
+            .catch(err => {
+                console.error('Login error:', err);
+                alert('Login failed: ' + err.message);
             });
         }
 
@@ -83,18 +96,31 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
+            if (!username || !password) {
+                alert('Please enter username and password');
+                return;
+            }
+            
             fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             })
-            .then(res => res.json())
+            .then(res => {
+                console.log('Register response status:', res.status);
+                return res.json();
+            })
             .then(data => {
+                console.log('Register response data:', data);
                 if (data.user_id) {
                     alert('Registration successful! Please login.');
                 } else {
                     alert(data.error || 'Registration failed');
                 }
+            })
+            .catch(err => {
+                console.error('Register error:', err);
+                alert('Registration failed: ' + err.message);
             });
         }
 

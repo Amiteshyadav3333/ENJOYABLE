@@ -35,41 +35,59 @@ def index():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    if User.query.filter_by(username=username).first():
-        return jsonify({'error': 'Username already exists'}), 400
-    
-    user = User(
-        username=username,
-        password_hash=generate_password_hash(password),
-        is_creator=True
-    )
-    db.session.add(user)
-    db.session.commit()
-    
-    return jsonify({'message': 'Registration successful', 'user_id': user.id})
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password required'}), 400
+        
+        if User.query.filter_by(username=username).first():
+            return jsonify({'error': 'Username already exists'}), 400
+        
+        user = User(
+            username=username,
+            password_hash=generate_password_hash(password),
+            is_creator=True
+        )
+        db.session.add(user)
+        db.session.commit()
+        
+        return jsonify({'message': 'Registration successful', 'user_id': user.id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    user = User.query.filter_by(username=username).first()
-    if user and check_password_hash(user.password_hash, password):
-        session['user_id'] = user.id
-        return jsonify({
-            'message': 'Login successful',
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'is_creator': user.is_creator
-            }
-        })
-    return jsonify({'error': 'Invalid credentials'}), 401
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password required'}), 400
+        
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            return jsonify({
+                'message': 'Login successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'is_creator': user.is_creator
+                }
+            })
+        return jsonify({'error': 'Invalid credentials'}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/podcasts', methods=['GET'])
 def get_podcasts():
@@ -105,6 +123,14 @@ def create_podcast():
 @app.route('/health')
 def health():
     return jsonify({'status': 'healthy'})
+
+@app.route('/api/test', methods=['GET', 'POST'])
+def test():
+    return jsonify({
+        'method': request.method,
+        'data': request.get_json() if request.method == 'POST' else None,
+        'status': 'API working'
+    })
 
 if __name__ == '__main__':
     with app.app_context():
