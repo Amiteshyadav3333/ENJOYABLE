@@ -80,8 +80,9 @@
             })
             .then(data => {
                 console.log('Response data:', data);
-                if (data.user) {
+                if (data.message === 'Login successful' && data.user) {
                     currentUser = data.user;
+                    alert('Login successful! Welcome ' + data.user.username);
                     showMainSection();
                     loadPodcasts();
                 } else {
@@ -129,8 +130,10 @@
         }
 
         function showMainSection() {
+            console.log('Showing main section');
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('mainSection').classList.remove('hidden');
+            console.log('Main section shown');
         }
 
         function loadPodcasts() {
