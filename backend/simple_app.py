@@ -97,18 +97,19 @@ def login():
         if not username or not password:
             return jsonify({'error': 'Username and password required'}), 400
         
-        user = User.query.filter_by(username=username).first()
-        if not user:
-            return jsonify({'error': 'User not found'}), 401
-            
-        # Check both hashed and plain password for admin
-        password_valid = False
+        # Simple hardcoded login for testing
         if username == 'admin' and password == 'admin123':
-            password_valid = True
-        elif check_password_hash(user.password_hash, password):
-            password_valid = True
+            # Find or create admin user
+            user = User.query.filter_by(username='admin').first()
+            if not user:
+                user = User(
+                    username='admin',
+                    password_hash='dummy',
+                    is_creator=True
+                )
+                db.session.add(user)
+                db.session.commit()
             
-        if password_valid:
             session['user_id'] = user.id
             return jsonify({
                 'message': 'Login successful',
@@ -118,7 +119,21 @@ def login():
                     'is_creator': user.is_creator
                 }
             })
-        return jsonify({'error': f'Invalid password for user {username}'}), 401
+        
+        # For other users, check normally
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password_hash, password):
+            session['user_id'] = user.id
+            return jsonify({
+                'message': 'Login successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'is_creator': user.is_creator
+                }
+            })
+        
+        return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
