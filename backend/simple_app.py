@@ -8,7 +8,11 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'podcast-secret-key')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///podcast.db')
+# Database configuration for Render PostgreSQL
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///podcast.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -146,6 +150,14 @@ def test():
         'data': request.get_json() if request.method == 'POST' else None,
         'status': 'API working'
     })
+
+@app.route('/api/init-db')
+def init_db():
+    try:
+        db.create_all()
+        return jsonify({'message': 'Database initialized successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
