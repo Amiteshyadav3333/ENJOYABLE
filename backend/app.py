@@ -15,7 +15,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from twilio.rest import Client
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-app.secret_key = 'your-secret-key'
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key')
 
 # Database configuration
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -28,9 +28,9 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 CORS(app)
 
 # Twilio configuration
-TWILIO_ACCOUNT_SID = 'your_sid'
-TWILIO_AUTH_TOKEN = 'your_token'
-TWILIO_PHONE_NUMBER = '+1XXXXXXXXXX'
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', 'your_sid')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', 'your_token')
+TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '+1XXXXXXXXXX')
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 # Database Model
@@ -242,4 +242,5 @@ if __name__ == '__main__':
             db.session.add(User(username='admin', password_hash=generate_password_hash('admin123'), is_admin=True))
             db.session.commit()
             print("✅ Admin user created: admin / admin123")
-    socketio.run(app, host='0.0.0.0', port=5001, debug=True)
+    port = int(os.environ.get('PORT', 5001))
+    socketio.run(app, host='0.0.0.0', port=port, debug=False)
