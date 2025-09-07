@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Interactive Podcast Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .form-group { margin: 15px 0; }
+        input, textarea, button { width: 100%; padding: 12px; margin: 5px 0; border: none; border-radius: 5px; }
+        input, textarea { background: #333; color: white; }
+        button { background: #007bff; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .podcast-card { background: #2d2d2d; padding: 20px; margin: 15px 0; border-radius: 10px; }
+        .live-badge { background: #ff4444; padding: 5px 10px; border-radius: 15px; font-size: 12px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Live Interactive Podcast Platform</h1>
+            <p>Create and join live podcasts</p>
+        </div>
+
+        <div id="loginSection">
+            <h2>Login / Register</h2>
+            <div class="form-group">
+                <input type="text" id="username" placeholder="Username">
+                <input type="password" id="password" placeholder="Password">
+                <button onclick="login()">Login</button>
+                <button onclick="register()">Register</button>
+            </div>
+        </div>
+
+        <div id="mainSection" class="hidden">
+            <div id="podcastsSection">
+                <h2>🔴 Live Podcasts</h2>
+                <div id="podcastList"></div>
+                <button onclick="showCreateForm()">Create New Podcast</button>
+            </div>
+
+            <div id="createSection" class="hidden">
+                <h2>Create New Podcast</h2>
+                <div class="form-group">
+                    <input type="text" id="podcastTitle" placeholder="Podcast Title">
+                    <textarea id="podcastDescription" placeholder="Description"></textarea>
+                    <button onclick="createPodcast()">Create & Go Live</button>
+                    <button onclick="showPodcasts()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.user) {
+                    currentUser = data.user;
+                    showMainSection();
+                    loadPodcasts();
+                } else {
+                    alert(data.error || 'Login failed');
+                }
+            });
+        }
+
+        function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.user_id) {
+                    alert('Registration successful! Please login.');
+                } else {
+                    alert(data.error || 'Registration failed');
+                }
+            });
+        }
+
+        function showMainSection() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('mainSection').classList.remove('hidden');
+        }
+
+        function loadPodcasts() {
+            fetch('/api/podcasts')
+            .then(res => res.json())
+            .then(podcasts => {
+                const list = document.getElementById('podcastList');
+                list.innerHTML = podcasts.map(p => `
+                    <div class="podcast-card">
+                        <span class="live-badge">🔴 LIVE</span>
+                        <h3>${p.title}</h3>
+                        <p>${p.description}</p>
+                        <button onclick="joinPodcast('${p.room_id}')">Join Live</button>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function showCreateForm() {
+            document.getElementById('podcastsSection').classList.add('hidden');
+            document.getElementById('createSection').classList.remove('hidden');
+        }
+
+        function showPodcasts() {
+            document.getElementById('createSection').classList.add('hidden');
+            document.getElementById('podcastsSection').classList.remove('hidden');
+        }
+
+        function createPodcast() {
+            const title = document.getElementById('podcastTitle').value;
+            const description = document.getElementById('podcastDescription').value;
+            
+            fetch('/api/podcasts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.room_id) {
+                    alert('Podcast created successfully!');
+                    showPodcasts();
+                    loadPodcasts();
+                }
+            });
+        }
+
+        function joinPodcast(roomId) {
+            alert(`Joining podcast room: ${roomId}`);
+        }
+    </script>
+</body>
+</html>
