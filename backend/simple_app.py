@@ -29,6 +29,21 @@ class Podcast(db.Model):
     is_live = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# Initialize database after models
+try:
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            admin = User(
+                username='admin',
+                password_hash=generate_password_hash('admin123'),
+                is_creator=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+except Exception as e:
+    print(f'Database init error: {e}')
+
 @app.route('/')
 def index():
     return send_from_directory('../frontend', 'simple.html')
@@ -133,16 +148,5 @@ def test():
     })
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        if not User.query.filter_by(username='admin').first():
-            admin = User(
-                username='admin',
-                password_hash=generate_password_hash('admin123'),
-                is_creator=True
-            )
-            db.session.add(admin)
-            db.session.commit()
-    
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
