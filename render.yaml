@@ -3,7 +3,7 @@ services:
     name: enjoyable-backend
     env: python
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT backend.app_simple:app
+    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT backend.podcast_app:app
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
