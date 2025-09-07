@@ -52,6 +52,10 @@ except Exception as e:
 def index():
     return send_from_directory('../frontend', 'simple.html')
 
+@app.route('/test')
+def test_page():
+    return send_from_directory('../frontend', 'test.html')
+
 @app.route('/api/register', methods=['POST'])
 def register():
     try:
@@ -156,6 +160,18 @@ def init_db():
     try:
         db.create_all()
         return jsonify({'message': 'Database initialized successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users')
+def list_users():
+    try:
+        users = User.query.all()
+        return jsonify([{
+            'id': u.id,
+            'username': u.username,
+            'is_creator': u.is_creator
+        } for u in users])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

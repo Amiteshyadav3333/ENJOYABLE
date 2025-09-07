@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        .container { max-width: 600px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .result { background: #2d2d2d; padding: 15px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug Panel</h1>
+        
+        <button onclick="checkUsers()">Check Users</button>
+        <button onclick="testRegister()">Test Register</button>
+        <button onclick="testLogin()">Test Login (admin/admin123)</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function showResult(data) {
+            document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+        }
+
+        function checkUsers() {
+            fetch('/api/users')
+            .then(res => res.json())
+            .then(data => {
+                showResult({ title: 'Existing Users', data });
+            })
+            .catch(err => showResult({ error: err.message }));
+        }
+
+        function testRegister() {
+            const username = 'test' + Math.floor(Math.random() * 1000);
+            fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password: 'test123' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showResult({ title: 'Register Test', username, data });
+            })
+            .catch(err => showResult({ error: err.message }));
+        }
+
+        function testLogin() {
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showResult({ title: 'Login Test (admin/admin123)', data });
+            })
+            .catch(err => showResult({ error: err.message }));
+        }
+    </script>
+</body>
+</html>
