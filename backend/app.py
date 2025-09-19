@@ -1,4 +1,6 @@
-from flask import Flask, request, jsonify, send_from_directory
+import os
+import cv2
+from flask import Flask, request, jsonify, send_from_directory, Response, render_template
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -69,7 +71,39 @@ def create_podcast():
 def health():
     return jsonify({'status': 'healthy'})
 
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+# Global video capture (0 = default webcam)
+camera = cv2.VideoCapture(0)
+
+# @app.route('/')
+# def index():
+#     # This HTML will show the live video
+#     return """
+#     <html>
+#         <head><title>Live Podcast</title></head>
+#         <body>
+#             <h1>Live Video Stream</h1>
+#             <img src="/video_feed">
+#         </body>
+#     </html>
+#     """
+
+def generate_frames():
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            # Encode frame as JPEG
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame_bytes = buffer.tobytes()
+            # Yield frame in byte format for MJPEG streaming
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    # Video streaming route
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5001)  # change to 5001 or any free port
