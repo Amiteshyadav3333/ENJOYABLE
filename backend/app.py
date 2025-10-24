@@ -74,18 +74,6 @@ def health():
 # Global video capture (0 = default webcam)
 camera = cv2.VideoCapture(0)
 
-# @app.route('/')
-# def index():
-#     # This HTML will show the live video
-#     return """
-#     <html>
-#         <head><title>Live Podcast</title></head>
-#         <body>
-#             <h1>Live Video Stream</h1>
-#             <img src="/video_feed">
-#         </body>
-#     </html>
-#     """
 
 def generate_frames():
     while True:

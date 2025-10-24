@@ -3,7 +3,7 @@ services:
     name: podcast-app
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python backend/app.py
+    startCommand: python backend/video_app.py
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
