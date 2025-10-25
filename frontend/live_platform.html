@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔴 Live Video Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; }
+        
+        .header { background: #212121; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #ff0000; }
+        .user-info { display: flex; gap: 16px; align-items: center; }
+        .live-btn { background: #ff0000; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .section { margin-bottom: 40px; }
+        .section h2 { margin-bottom: 20px; color: #fff; }
+        
+        /* Live Stream Controls */
+        .stream-controls { background: #212121; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 8px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; background: #333; border: 1px solid #555; color: #fff; border-radius: 4px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-primary { background: #065fd4; color: white; }
+        .btn-danger { background: #ff0000; color: white; }
+        .btn-success { background: #00ff00; color: black; }
+        
+        /* Video Player */
+        .video-container { background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+        .video-player { width: 100%; height: 400px; background: #000; }
+        .video-info { padding: 16px; background: #212121; }
+        .video-title { font-size: 18px; margin-bottom: 8px; }
+        .video-meta { color: #aaa; font-size: 14px; }
+        .stream-status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .status-live { background: #ff0000; color: white; }
+        .status-offline { background: #666; color: white; }
+        
+        /* Video Grid */
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .video-card { background: #212121; border-radius: 8px; overflow: hidden; cursor: pointer; }
+        .video-thumbnail { width: 100%; height: 180px; background: #333; position: relative; }
+        .video-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+        .live-indicator { position: absolute; top: 8px; left: 8px; background: #ff0000; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .video-details { padding: 12px; }
+        .video-title-small { font-size: 14px; margin-bottom: 4px; }
+        .video-creator { color: #aaa; font-size: 12px; }
+        .video-stats { color: #aaa; font-size: 12px; margin-top: 4px; }
+        
+        /* Login */
+        .login-container { max-width: 400px; margin: 100px auto; background: #212121; padding: 32px; border-radius: 8px; }
+        .login-title { text-align: center; margin-bottom: 24px; }
+        .login-form input { width: 100%; padding: 12px; margin-bottom: 16px; background: #333; border: 1px solid #555; color: #fff; border-radius: 4px; }
+        .login-btn { width: 100%; padding: 12px; background: #065fd4; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        
+        .hidden { display: none; }
+        .status-indicator { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-online { background: #00ff00; }
+        .status-offline { background: #ff0000; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">🔴 LiveStream Platform</div>
+        <div class="user-info">
+            <span id="userDisplay">Guest</span>
+            <button class="live-btn" onclick="showStreamControls()" id="goLiveBtn" style="display: none;">Go Live</button>
+            <button onclick="logout()" id="logoutBtn" style="display: none;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Login -->
+    <div id="loginContainer" class="login-container">
+        <h2 class="login-title">🎥 Join Live Platform</h2>
+        <div class="login-form">
+            <input type="text" id="loginUsername" placeholder="Username">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button class="login-btn" onclick="login()">Login</button>
+            <p style="text-align: center; margin-top: 16px; color: #aaa;">
+                Demo: admin/admin123 or creator1/pass123
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container hidden" id="mainContent">
+        <!-- Camera Test -->
+        <div class="section">
+            <h2>📹 Camera Status</h2>
+            <div class="stream-controls">
+                <p id="cameraStatus">
+                    <span class="status-indicator status-offline"></span>
+                    Checking camera...
+                </p>
+                <button class="btn btn-primary" onclick="testCamera()">Test Camera</button>
+            </div>
+        </div>
+
+        <!-- Stream Controls -->
+        <div class="section hidden" id="streamControlsSection">
+            <h2>🔴 Start Live Stream</h2>
+            <div class="stream-controls">
+                <div class="form-group">
+                    <label>Stream Title</label>
+                    <input type="text" id="streamTitle" placeholder="Enter stream title">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="streamDescription" placeholder="Describe your stream"></textarea>
+                </div>
+                <button class="btn btn-danger" onclick="startLiveStream()" id="startStreamBtn">🔴 Start Live Stream</button>
+                <button class="btn btn-success hidden" onclick="stopLiveStream()" id="stopStreamBtn">⏹️ Stop Stream</button>
+            </div>
+        </div>
+
+        <!-- Current Stream -->
+        <div class="section hidden" id="currentStreamSection">
+            <h2>📺 Your Live Stream</h2>
+            <div class="video-container">
+                <img id="liveStreamPlayer" class="video-player" src="" alt="Live Stream">
+                <div class="video-info">
+                    <div class="video-title" id="currentStreamTitle">Stream Title</div>
+                    <div class="video-meta">
+                        <span class="stream-status status-live">🔴 LIVE</span>
+                        <span id="viewerCount">0 viewers</span>
+                        <span id="streamDuration">00:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Streams -->
+        <div class="section">
+            <h2>🔴 Live Now</h2>
+            <div class="video-grid" id="liveStreamsGrid"></div>
+        </div>
+
+        <!-- All Videos -->
+        <div class="section">
+            <h2>📹 All Videos</h2>
+            <div class="video-grid" id="allVideosGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentStreamId = null;
+        let streamInterval = null;
+
+        // Authentication
+        function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.user) {
+                    currentUser = data.user;
+                    document.getElementById('userDisplay').textContent = data.user.username;
+                    document.getElementById('loginContainer').classList.add('hidden');
+                    document.getElementById('mainContent').classList.remove('hidden');
+                    document.getElementById('goLiveBtn').style.display = 'block';
+                    document.getElementById('logoutBtn').style.display = 'block';
+                    
+                    testCamera();
+                    loadContent();
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+
+        function logout() {
+            if (currentStreamId) {
+                stopLiveStream();
+            }
+            currentUser = null;
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('goLiveBtn').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+        }
+
+        // Camera Functions
+        function testCamera() {
+            fetch('/api/camera-test')
+            .then(res => res.json())
+            .then(data => {
+                const statusEl = document.getElementById('cameraStatus');
+                if (data.available) {
+                    statusEl.innerHTML = '<span class="status-indicator status-online"></span>Camera ready for streaming!';
+                } else {
+                    statusEl.innerHTML = '<span class="status-indicator status-offline"></span>Camera not available';
+                }
+            });
+        }
+
+        // Stream Controls
+        function showStreamControls() {
+            document.getElementById('streamControlsSection').classList.remove('hidden');
+        }
+
+        function startLiveStream() {
+            const title = document.getElementById('streamTitle').value;
+            const description = document.getElementById('streamDescription').value;
+            
+            if (!title) {
+                alert('Please enter a stream title');
+                return;
+            }
+
+            fetch('/api/start-live', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: title,
+                    description: description,
+                    creator_id: currentUser.id,
+                    creator_name: currentUser.username
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.stream_id) {
+                    currentStreamId = data.stream_id;
+                    
+                    // Show live stream
+                    document.getElementById('currentStreamSection').classList.remove('hidden');
+                    document.getElementById('liveStreamPlayer').src = data.stream_url;
+                    document.getElementById('currentStreamTitle').textContent = title;
+                    
+                    // Update buttons
+                    document.getElementById('startStreamBtn').classList.add('hidden');
+                    document.getElementById('stopStreamBtn').classList.remove('hidden');
+                    
+                    // Start viewer count updates
+                    startStreamUpdates();
+                    
+                    alert('🔴 Live stream started!');
+                    loadContent();
+                } else {
+                    alert('Failed to start stream: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                alert('Error starting stream: ' + err.message);
+            });
+        }
+
+        function stopLiveStream() {
+            if (!currentStreamId) return;
+            
+            fetch(`/api/stop-live/${currentStreamId}`, {
+                method: 'POST'
+            })
+            .then(res => res.json())
+            .then(data => {
+                // Hide live stream
+                document.getElementById('currentStreamSection').classList.add('hidden');
+                
+                // Update buttons
+                document.getElementById('startStreamBtn').classList.remove('hidden');
+                document.getElementById('stopStreamBtn').classList.add('hidden');
+                
+                // Stop updates
+                if (streamInterval) {
+                    clearInterval(streamInterval);
+                    streamInterval = null;
+                }
+                
+                currentStreamId = null;
+                alert('Stream stopped and saved!');
+                loadContent();
+            });
+        }
+
+        function startStreamUpdates() {
+            streamInterval = setInterval(() => {
+                if (currentStreamId) {
+                    fetch(`/api/videos/${currentStreamId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('viewerCount').textContent = `${data.viewers} viewers`;
+                    });
+                }
+            }, 5000);
+        }
+
+        // Content Loading
+        function loadContent() {
+            loadLiveStreams();
+            loadAllVideos();
+        }
+
+        function loadLiveStreams() {
+            fetch('/api/live-streams')
+            .then(res => res.json())
+            .then(streams => {
+                const grid = document.getElementById('liveStreamsGrid');
+                if (streams.length === 0) {
+                    grid.innerHTML = '<p style="color: #aaa;">No live streams currently</p>';
+                    return;
+                }
+                
+                grid.innerHTML = streams.map(stream => `
+                    <div class="video-card" onclick="watchStream('${stream.id}')">
+                        <div class="video-thumbnail">
+                            <img src="/api/videos/${stream.id}/thumbnail" alt="${stream.title}">
+                            <div class="live-indicator">🔴 LIVE</div>
+                        </div>
+                        <div class="video-details">
+                            <div class="video-title-small">${stream.title}</div>
+                            <div class="video-creator">${stream.creator_name}</div>
+                            <div class="video-stats">${stream.viewers} watching now</div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function loadAllVideos() {
+            fetch('/api/videos')
+            .then(res => res.json())
+            .then(videos => {
+                const grid = document.getElementById('allVideosGrid');
+                grid.innerHTML = videos.map(video => `
+                    <div class="video-card" onclick="watchVideo('${video.id}')">
+                        <div class="video-thumbnail">
+                            <img src="/api/videos/${video.id}/thumbnail" alt="${video.title}">
+                            ${video.is_live ? '<div class="live-indicator">🔴 LIVE</div>' : ''}
+                        </div>
+                        <div class="video-details">
+                            <div class="video-title-small">${video.title}</div>
+                            <div class="video-creator">${video.creator_name}</div>
+                            <div class="video-stats">
+                                ${video.views} views • ${video.is_live ? 'Live now' : 'Recorded'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function watchStream(streamId) {
+            window.open(`/api/stream/${streamId}`, '_blank');
+        }
+
+        function watchVideo(videoId) {
+            fetch(`/api/videos/${videoId}`)
+            .then(res => res.json())
+            .then(video => {
+                if (video.is_live) {
+                    watchStream(videoId);
+                } else {
+                    alert('This is a recorded video. Playback feature coming soon!');
+                }
+            });
+        }
+
+        // Auto-refresh content every 10 seconds
+        setInterval(() => {
+            if (currentUser && !document.getElementById('mainContent').classList.contains('hidden')) {
+                loadContent();
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

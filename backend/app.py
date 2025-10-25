@@ -94,4 +94,4 @@ def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)  # change to 5001 or any free port
+    app.run(debug=True, port=5002)  # change to 5001 or any free port
