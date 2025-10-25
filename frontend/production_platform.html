@@ -65,7 +65,8 @@
         <h2>Login to VideoTube Pro</h2>
         <input type="text" id="loginUsername" placeholder="Username" style="width: 100%; padding: 12px; margin: 8px 0; background: #3d3d3d; border: 1px solid #4d4d4d; color: #fff; border-radius: 4px;">
         <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; padding: 12px; margin: 8px 0; background: #3d3d3d; border: 1px solid #4d4d4d; color: #fff; border-radius: 4px;">
-        <button onclick="login()" style="width: 100%; padding: 12px; background: #065fd4; color: white; border: none; border-radius: 4px; cursor: pointer;">Login</button>
+        <button onclick="login()" style="width: 100%; padding: 12px; background: #065fd4; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 8px;">Login</button>
+        <button onclick="register()" style="width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Register</button>
         <p style="text-align: center; margin-top: 16px; color: #aaa;">Demo: admin/admin123</p>
     </div>
 
@@ -123,13 +124,19 @@
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             
+            console.log('Login attempt:', { username, password });
+            
             fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             })
-            .then(res => res.json())
+            .then(res => {
+                console.log('Login response status:', res.status);
+                return res.json();
+            })
             .then(data => {
+                console.log('Login response:', data);
                 if (data.user) {
                     currentUser = data.user;
                     document.getElementById('userDisplay').textContent = data.user.username;
@@ -140,8 +147,46 @@
                     document.getElementById('logoutBtn').style.display = 'block';
                     loadVideos();
                 } else {
-                    alert(data.error);
+                    alert(data.error || 'Login failed');
                 }
+            })
+            .catch(err => {
+                console.error('Login error:', err);
+                alert('Login failed: ' + err.message);
+            });
+        }
+        
+        function register() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                alert('Please enter username and password');
+                return;
+            }
+            
+            console.log('Register attempt:', { username, password });
+            
+            fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => {
+                console.log('Register response status:', res.status);
+                return res.json();
+            })
+            .then(data => {
+                console.log('Register response:', data);
+                if (data.user_id) {
+                    alert('Registration successful! You can now login.');
+                } else {
+                    alert(data.error || 'Registration failed');
+                }
+            })
+            .catch(err => {
+                console.error('Register error:', err);
+                alert('Registration failed: ' + err.message);
             });
         }
 
@@ -341,7 +386,33 @@
         }
 
         function showLiveModal() {
-            alert('Live streaming feature coming soon!');
+            const title = prompt('Enter live stream title:');
+            if (!title) return;
+            
+            const description = prompt('Enter description (optional):') || '';
+            
+            fetch('/api/start-live', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: title,
+                    description: description,
+                    creator_id: currentUser.id,
+                    creator_name: currentUser.username
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.stream_id) {
+                    alert('🔴 Live stream started! Stream ID: ' + data.stream_id);
+                    loadVideos();
+                } else {
+                    alert('Failed to start stream: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                alert('Error starting stream: ' + err.message);
+            });
         }
 
         // Auto-refresh videos every 30 seconds

@@ -40,8 +40,19 @@ def index():
 def login():
     try:
         data = request.get_json()
+        print(f"Login attempt: {data}")
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
         username = data.get('username')
         password = data.get('password')
+        
+        print(f"Username: {username}, Password: {password}")
+        print(f"Available users: {list(users.keys())}")
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password required'}), 400
         
         if username in users and users[username] == password:
             return jsonify({
@@ -54,19 +65,35 @@ def login():
             })
         return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
+        print(f"Login error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    if username in users:
-        return jsonify({'error': 'Username already exists'}), 400
-    
-    users[username] = password
-    return jsonify({'message': 'Registration successful', 'user_id': username})
+    global users
+    try:
+        data = request.get_json()
+        print(f"Register attempt: {data}")
+        
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return jsonify({'error': 'Username and password required'}), 400
+        
+        if username in users:
+            return jsonify({'error': 'Username already exists'}), 400
+        
+        users[username] = password
+        print(f"User registered: {username}")
+        return jsonify({'message': 'Registration successful', 'user_id': username})
+        
+    except Exception as e:
+        print(f"Register error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # Video Management
 @app.route('/api/videos', methods=['GET'])
