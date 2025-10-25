@@ -196,12 +196,12 @@ def get_video(video_id):
 
 @app.route('/api/videos/<video_id>/like', methods=['POST'])
 def like_video(video_id):
+    global likes
     data = request.get_json()
     user_id = data.get('user_id')
     like_type = data.get('type')  # 'like' or 'dislike'
     
     # Remove existing like/dislike from this user
-    global likes
     likes = [l for l in likes if not (l['video_id'] == video_id and l['user_id'] == user_id)]
     
     # Add new like/dislike
@@ -239,6 +239,7 @@ def delete_comment(video_id, comment_id):
 
 @app.route('/api/videos/<video_id>', methods=['DELETE'])
 def delete_video(video_id):
+    global videos, comments, likes
     data = request.get_json()
     user_id = data.get('user_id')
     
@@ -258,7 +259,6 @@ def delete_video(video_id):
         print(f"Error deleting file: {e}")
     
     # Remove from database
-    global videos, comments, likes
     videos = [v for v in videos if v['id'] != video_id]
     comments = [c for c in comments if c['video_id'] != video_id]
     likes = [l for l in likes if l['video_id'] != video_id]
