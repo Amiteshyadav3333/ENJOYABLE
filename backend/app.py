@@ -389,6 +389,10 @@ def share_video(video_id):
 def watch_video(video_id):
     return send_from_directory('../frontend', 'watch.html')
 
+@app.route('/live')
+def live_stream_page():
+    return send_from_directory('../frontend', 'live_stream.html')
+
 @app.route('/health')
 def health():
     return jsonify({

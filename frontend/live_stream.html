@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔴 Live Stream</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #0f0f0f; color: #fff; }
+        
+        .live-container { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; height: 100vh; }
+        .stream-area { background: #212121; border-radius: 12px; padding: 20px; }
+        .chat-area { background: #212121; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
+        
+        .stream-header { margin-bottom: 20px; }
+        .live-badge { background: #ff0000; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+        .viewer-count { background: #333; padding: 4px 12px; border-radius: 15px; font-size: 12px; margin-left: 10px; }
+        
+        .video-placeholder { width: 100%; height: 400px; background: #000; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #666; }
+        
+        .stream-controls { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-danger { background: #ff0000; color: white; }
+        .btn-primary { background: #065fd4; color: white; }
+        
+        .chat-messages { flex: 1; overflow-y: auto; margin-bottom: 15px; max-height: 300px; }
+        .chat-message { margin-bottom: 10px; padding: 8px; background: #333; border-radius: 6px; }
+        .chat-username { font-weight: bold; color: #65b3f7; }
+        
+        .chat-input { display: flex; gap: 10px; }
+        .chat-input input { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: #fff; border-radius: 6px; }
+        .chat-input button { padding: 10px 15px; background: #065fd4; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        
+        .stream-info { margin-bottom: 20px; }
+        .stream-title { font-size: 20px; margin-bottom: 8px; }
+        .stream-description { color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="live-container">
+        <div class="stream-area">
+            <div class="stream-header">
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <span class="live-badge">🔴 LIVE</span>
+                    <span class="viewer-count" id="viewerCount">0 viewers</span>
+                </div>
+                <div class="stream-info">
+                    <h1 class="stream-title" id="streamTitle">Live Stream</h1>
+                    <p class="stream-description" id="streamDescription">Stream description</p>
+                </div>
+            </div>
+            
+            <div class="video-placeholder" id="videoArea">
+                📹 Live Stream Active
+                <br><small>Simulated live video feed</small>
+            </div>
+            
+            <div class="stream-controls">
+                <button class="btn btn-danger" onclick="stopStream()" id="stopBtn">⏹️ Stop Stream</button>
+                <button class="btn btn-primary" onclick="shareStream()">📤 Share</button>
+            </div>
+        </div>
+        
+        <div class="chat-area">
+            <h3>Live Chat</h3>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="handleChatKeypress(event)">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let streamId = new URLSearchParams(window.location.search).get('id');
+        let currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        let chatInterval;
+        let viewerInterval;
+
+        function initializeStream() {
+            if (!streamId) {
+                alert('No stream ID provided');
+                window.close();
+                return;
+            }
+
+            // Load stream data
+            fetch(`/api/live/${streamId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Stream not found');
+                    window.close();
+                    return;
+                }
+                
+                document.getElementById('streamTitle').textContent = data.title;
+                document.getElementById('streamDescription').textContent = data.description;
+                document.getElementById('viewerCount').textContent = `${data.viewers} viewers`;
+                
+                // Start periodic updates
+                startPeriodicUpdates();
+            })
+            .catch(err => {
+                console.error('Error loading stream:', err);
+                alert('Failed to load stream');
+            });
+        }
+
+        function startPeriodicUpdates() {
+            // Update viewer count every 5 seconds
+            viewerInterval = setInterval(() => {
+                fetch(`/api/live/${streamId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.error) {
+                        document.getElementById('viewerCount').textContent = `${data.viewers} viewers`;
+                        updateChat(data.chat_messages || []);
+                    }
+                })
+                .catch(err => console.error('Update error:', err));
+            }, 5000);
+        }
+
+        function updateChat(messages) {
+            const chatContainer = document.getElementById('chatMessages');
+            chatContainer.innerHTML = messages.map(msg => `
+                <div class="chat-message">
+                    <span class="chat-username">${msg.username}:</span>
+                    <span>${msg.text}</span>
+                </div>
+            `).join('');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message || !currentUser.username) return;
+            
+            fetch(`/api/live/${streamId}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: currentUser.username,
+                    text: message
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) {
+                    input.value = '';
+                }
+            })
+            .catch(err => console.error('Chat error:', err));
+        }
+
+        function handleChatKeypress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function stopStream() {
+            if (confirm('Are you sure you want to stop the live stream?')) {
+                fetch(`/api/stop-live/${streamId}`, {
+                    method: 'POST'
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert('Stream stopped and saved!');
+                    clearInterval(viewerInterval);
+                    window.close();
+                })
+                .catch(err => {
+                    console.error('Stop stream error:', err);
+                    alert('Failed to stop stream');
+                });
+            }
+        }
+
+        function shareStream() {
+            const shareUrl = `${window.location.origin}/live?id=${streamId}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('Stream link copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy this link:', shareUrl);
+            });
+        }
+
+        // Initialize when page loads
+        window.onload = initializeStream;
+
+        // Cleanup on page unload
+        window.onbeforeunload = () => {
+            if (viewerInterval) clearInterval(viewerInterval);
+        };
+    </script>
+</body>
+</html>

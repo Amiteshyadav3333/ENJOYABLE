@@ -200,11 +200,35 @@
         }
 
         function loadVideos() {
-            fetch('/api/videos')
-            .then(res => res.json())
-            .then(data => {
-                videos = data;
+            // Load both videos and live streams
+            Promise.all([
+                fetch('/api/videos').then(res => res.json()),
+                fetch('/api/live-streams').then(res => res.json())
+            ])
+            .then(([videoData, liveData]) => {
+                // Combine videos and live streams
+                const liveStreams = liveData.map(stream => ({
+                    ...stream,
+                    is_live: true,
+                    thumbnail: `/api/videos/${stream.id}/thumbnail`,
+                    views: stream.viewers,
+                    likes: 0,
+                    dislikes: 0,
+                    comments_count: stream.chat_messages ? stream.chat_messages.length : 0
+                }));
+                
+                videos = [...liveStreams, ...videoData];
                 displayVideos(videos);
+            })
+            .catch(err => {
+                console.error('Error loading content:', err);
+                // Fallback to just videos
+                fetch('/api/videos')
+                .then(res => res.json())
+                .then(data => {
+                    videos = data;
+                    displayVideos(videos);
+                });
             });
         }
 
@@ -225,23 +249,48 @@
         }
 
         function playVideo(videoId) {
-            fetch(`/api/videos/${videoId}`)
+            // Check if it's a live stream first
+            fetch(`/api/live/${videoId}`)
             .then(res => res.json())
+            .then(data => {
+                if (!data.error) {
+                    // It's a live stream - open in new window
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    const streamWindow = window.open(`/live?id=${videoId}`, '_blank', 'width=1200,height=800');
+                    if (!streamWindow) {
+                        alert('Please allow popups to watch live streams');
+                    }
+                    return;
+                }
+                
+                // Not a live stream, try regular video
+                return fetch(`/api/videos/${videoId}`);
+            })
+            .then(res => {
+                if (!res) return; // Live stream case
+                return res.json();
+            })
             .then(video => {
+                if (!video) return; // Live stream case
+                
                 currentVideo = video;
                 document.getElementById('videoGrid').classList.add('hidden');
                 document.getElementById('videoPlayer').classList.remove('hidden');
                 
                 document.getElementById('mainVideo').src = video.video_url;
                 document.getElementById('videoTitle').textContent = video.title;
-                document.getElementById('likeCount').textContent = video.likes;
-                document.getElementById('dislikeCount').textContent = video.dislikes;
+                document.getElementById('likeCount').textContent = video.likes || 0;
+                document.getElementById('dislikeCount').textContent = video.dislikes || 0;
                 
                 if (currentUser && (currentUser.id === video.creator_id || currentUser.id === 'admin')) {
                     document.getElementById('deleteBtn').style.display = 'block';
                 }
                 
-                displayComments(video.comments);
+                displayComments(video.comments || []);
+            })
+            .catch(err => {
+                console.error('Error playing video:', err);
+                alert('Failed to load video');
             });
         }
 
@@ -391,6 +440,9 @@
             
             const description = prompt('Enter description (optional):') || '';
             
+            // Store current user for live stream page
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
             fetch('/api/start-live', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -404,7 +456,13 @@
             .then(res => res.json())
             .then(data => {
                 if (data.stream_id) {
-                    alert('🔴 Live stream started! Stream ID: ' + data.stream_id);
+                    // Open live stream in new window
+                    const streamWindow = window.open(`/live?id=${data.stream_id}`, '_blank', 'width=1200,height=800');
+                    if (!streamWindow) {
+                        alert('Please allow popups and try again');
+                    } else {
+                        alert('🔴 Live stream started!');
+                    }
                     loadVideos();
                 } else {
                     alert('Failed to start stream: ' + (data.error || 'Unknown error'));
